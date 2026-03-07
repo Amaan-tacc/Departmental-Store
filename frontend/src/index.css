@@ -3,5 +3,44 @@
 @tailwind utilities;
 body {
   @apply bg-gray-100;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+@media print {
+  /* Hide every element by default */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Show only the receipt modal and its children */
+  .print-receipt,
+  .print-receipt * {
+    visibility: visible;
+  }
+
+  /* Position the receipt at the top left of the printed page */
+  .print-receipt {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 20px;
+    background: white !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Hide print buttons and close icons during printing */
+  .print-hidden {
+    display: none !important;
+  }
+
+  /* Force white background and black text for better contrast */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color: black !important;
+    background-color: white !important;
+  }
 }

@@ -1,6 +1,8 @@
+// src/components/Sales/SalesDashboard.jsx
 import React, { useState, useEffect } from 'react';
 import { useSales } from '../../context/SalesContext';
 import { useAuth } from '../../context/AuthContext';
+import useThemeClasses from '../../context/useThemeClasses';
 import SalesTable from './SalesTable';
 import SaleDetails from './SaleDetails';
 import TodaySummary from './TodaySummary';
@@ -18,6 +20,7 @@ const SalesDashboard = () => {
   } = useSales();
   
   const { user } = useAuth();
+  const theme = useThemeClasses();
   const [activeTab, setActiveTab] = useState('pos');
   const [filters, setFilters] = useState({
     page: 1,
@@ -29,25 +32,9 @@ const SalesDashboard = () => {
   const [selectedSale, setSelectedSale] = useState(null);
   const [apiError, setApiError] = useState(null);
 
-  // Debug logging
-  useEffect(() => {
-    console.log('🏠 SalesDashboard State:', {
-      activeTab,
-      salesCount: sales?.length || 0,
-      sales: sales,
-      loading,
-      error,
-      pagination,
-      summary,
-      filters
-    });
-  }, [sales, loading, error, pagination, summary, activeTab, filters]);
-
   useEffect(() => {
     if (activeTab === 'history') {
-      console.log('🔄 SalesDashboard: Fetching sales with filters:', filters);
       getSales(filters).then(result => {
-        console.log('📋 Get sales result:', result);
         if (!result.success) {
           setApiError(result.error);
         } else {
@@ -58,12 +45,10 @@ const SalesDashboard = () => {
   }, [getSales, activeTab, filters]);
 
   const handleFilterChange = (newFilters) => {
-    console.log('🔧 Filter change:', newFilters);
     setFilters(prev => ({ ...prev, ...newFilters, page: 1 }));
   };
 
   const handlePageChange = (newPage) => {
-    console.log('📄 Page change:', newPage);
     setFilters(prev => ({ ...prev, page: newPage }));
   };
 
@@ -78,13 +63,11 @@ const SalesDashboard = () => {
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     if (tab === 'history') {
-      // Always refresh when switching to history tab
       getSales(filters);
     }
   };
 
   const handleRetry = () => {
-    console.log('🔄 Retrying sales fetch...');
     getSales(filters);
   };
 
@@ -92,7 +75,7 @@ const SalesDashboard = () => {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        <span className="ml-3 text-gray-600">Loading sales data...</span>
+        <span className={`ml-3 ${theme.textSecondary}`}>Loading sales data...</span>
       </div>
     );
   }
@@ -100,18 +83,12 @@ const SalesDashboard = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className={`${theme.card} rounded-lg shadow-sm border p-6 transition-colors duration-300`}>
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Sales Management</h1>
-            <p className="text-gray-600 mt-1">Process sales and manage transactions</p>
+            <h1 className={`text-2xl font-bold ${theme.textPrimary}`}>Sales Management</h1>
+            <p className={`${theme.textSecondary} mt-1`}>Process sales and manage transactions</p>
           </div>
-          {/* Debug info - remove in production */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="text-sm text-gray-500">
-              Sales: {sales?.length || 0} | Tab: {activeTab} | Loading: {loading.toString()}
-            </div>
-          )}
         </div>
       </div>
 
@@ -150,29 +127,31 @@ const SalesDashboard = () => {
       <TodaySummary />
 
       {/* Tabs */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        <div className="border-b border-gray-200">
+      <div className={`${theme.card} rounded-lg shadow-sm border overflow-hidden transition-colors duration-300`}>
+        <div className={`border-b ${theme.divider}`}>
           <nav className="flex -mb-px">
             <button
               onClick={() => handleTabChange('pos')}
-              className={`py-4 px-6 text-sm font-medium border-b-2 ${
+              className={`py-4 px-6 text-sm font-medium border-b-2 transition-colors duration-200 ${
                 activeTab === 'pos'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? theme.tabActive
+                  : theme.tabInactive
               }`}
             >
               Point of Sale
             </button>
-            <button
-              onClick={() => handleTabChange('history')}
-              className={`py-4 px-6 text-sm font-medium border-b-2 ${
-                activeTab === 'history'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Sales History
-            </button>
+            {user?.role === 'admin' && (
+              <button
+                onClick={() => handleTabChange('history')}
+                className={`py-4 px-6 text-sm font-medium border-b-2 transition-colors duration-200 ${
+                  activeTab === 'history'
+                    ? theme.tabActive
+                    : theme.tabInactive
+                }`}
+              >
+                Sales History
+              </button>
+            )}
           </nav>
         </div>
 

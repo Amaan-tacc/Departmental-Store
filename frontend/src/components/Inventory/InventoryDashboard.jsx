@@ -1,7 +1,8 @@
-// src/components/Inventory/InventoryDashboard.js
+// src/components/Inventory/InventoryDashboard.jsx
 import React, { useState, useEffect } from 'react';
 import { useInventory } from '../../context/InventoryContext';
 import { useAuth } from '../../context/AuthContext';
+import useThemeClasses from '../../context/useThemeClasses';
 import StockUpdateModal from './StockUpdateModal';
 import InventoryTable from './InventoryTable';
 import LowStockAlerts from './LowStockAlerts';
@@ -16,6 +17,7 @@ const InventoryDashboard = () => {
   } = useInventory();
   
   const { user } = useAuth();
+  const theme = useThemeClasses();
   const [filters, setFilters] = useState({
     search: '',
     category: '',
@@ -26,7 +28,7 @@ const InventoryDashboard = () => {
 
   useEffect(() => {
     getInventory();
-  }, [getInventory]); // ✅ Added dependency
+  }, [getInventory]);
 
   const handleFilterChange = (newFilters) => {
     setFilters(newFilters);
@@ -45,11 +47,11 @@ const InventoryDashboard = () => {
   };
 
   const handleBulkUpdate = () => {
-    setSelectedProduct(null); // Bulk update mode
+    setSelectedProduct(null);
     setShowStockModal(true);
   };
 
-  if (loading && inventory.length === 0) { // ✅ Fixed condition
+  if (loading && inventory.length === 0) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -60,11 +62,11 @@ const InventoryDashboard = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className={`${theme.card} rounded-lg shadow-sm border p-6 transition-colors duration-300`}>
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Inventory Management</h1>
-            <p className="text-gray-600 mt-1">Manage product stock and track inventory levels</p>
+            <h1 className={`text-2xl font-bold ${theme.textPrimary}`}>Inventory Management</h1>
+            <p className={`${theme.textSecondary} mt-1`}>Manage product stock and track inventory levels</p>
           </div>
           {user?.role === 'admin' && (
             <button
@@ -90,7 +92,7 @@ const InventoryDashboard = () => {
       )}
 
       {/* Inventory Stats */}
-      <InventoryStats inventory={inventory} /> {/* ✅ Pass inventory prop */}
+      <InventoryStats inventory={inventory} />
 
       {/* Low Stock Alerts */}
       <LowStockAlerts />

@@ -130,6 +130,18 @@ const getSales = useCallback(async (filters = {}) => {
     }
   }, []);
 
+  // Get monthly summary
+  const getMonthlySummary = useCallback(async () => {
+    try {
+      const response = await salesAPI.getMonthlySummary();
+      return { success: true, data: response.data.data };
+    } catch (error) {
+      const message = error.response?.data?.message || 'Failed to fetch monthly summary';
+      console.error('Get monthly summary error:', message);
+      return { success: false, error: message };
+    }
+  }, []);
+
   // Process refund
   const refundSale = useCallback(async (saleId, refundData) => {
     try {
@@ -224,6 +236,7 @@ const getSales = useCallback(async (filters = {}) => {
     getSales,
     refundSale,
     getTodaySummary,
+    getMonthlySummary,
     addToCart,
     updateCartItem,
     removeFromCart,
