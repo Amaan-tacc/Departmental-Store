@@ -121,6 +121,10 @@ export const salesAPI = {
   getTodaySummary: () => {
     console.log('API call: GET /sales/today/summary');
     return api.get('/sales/today/summary');
+  },
+  getMonthlySummary: () => {
+    console.log('API call: GET /sales/monthly/summary');
+    return api.get('/sales/monthly/summary');
   }
 };
 

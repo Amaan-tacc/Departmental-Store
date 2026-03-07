@@ -377,7 +377,7 @@ export const getTodaySummary = async (req, res) => {
     const summary = await Sale.aggregate([
       {
         $match: {
-          store: storeObjectId, // Use converted ObjectId
+          store: storeObjectId,
           createdAt: {
             $gte: today,
             $lt: tomorrow
@@ -402,6 +402,38 @@ export const getTodaySummary = async (req, res) => {
           averageSale: { $avg: '$total' }
         }
       }
+    ]);
+
+    // Cashier performance for today
+    const cashierStats = await Sale.aggregate([
+      {
+        $match: {
+          store: storeObjectId,
+          createdAt: {
+            $gte: today,
+            $lt: tomorrow
+          },
+          isRefund: { $ne: true }
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'cashier',
+          foreignField: '_id',
+          as: 'cashierInfo'
+        }
+      },
+      { $unwind: '$cashierInfo' },
+      {
+        $group: {
+          _id: '$cashier',
+          cashierName: { $first: '$cashierInfo.fullname' },
+          totalSales: { $sum: '$total' },
+          transactionCount: { $sum: 1 }
+        }
+      },
+      { $sort: { totalSales: -1 } }
     ]);
 
     console.log('Aggregation result:', summary);
@@ -444,6 +476,7 @@ export const getTodaySummary = async (req, res) => {
           totalItems: 0,
           averageSale: 0
         },
+        cashierStats: cashierStats || [],
         // Include test data for debugging
         debug: {
           totalStoreSales,
@@ -456,6 +489,91 @@ export const getTodaySummary = async (req, res) => {
     res.status(500).json({
       status: 'error',
       message: 'Error fetching today\'s summary'
+    });
+  }
+};
+
+// @desc    Get monthly sales summary
+// @route   GET /api/sales/monthly/summary
+// @access  Private
+export const getMonthlySummary = async (req, res) => {
+  try {
+    const storeId = req.user.store;
+    const storeObjectId = new mongoose.Types.ObjectId(storeId);
+    
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+    const summary = await Sale.aggregate([
+      {
+        $match: {
+          store: storeObjectId,
+          createdAt: {
+            $gte: firstDayOfMonth,
+            $lte: lastDayOfMonth
+          },
+          isRefund: { $ne: true }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalSales: { $sum: '$total' },
+          totalTransactions: { $sum: 1 },
+          totalItems: { 
+            $sum: { 
+              $reduce: {
+                input: '$items',
+                initialValue: 0,
+                in: { $add: ['$$value', '$$this.quantity'] }
+              }
+            }
+          },
+          averageSale: { $avg: '$total' }
+        }
+      }
+    ]);
+
+    // Daily sales for chart
+    const dailyStats = await Sale.aggregate([
+      {
+        $match: {
+          store: storeObjectId,
+          createdAt: {
+            $gte: firstDayOfMonth,
+            $lte: lastDayOfMonth
+          },
+          isRefund: { $ne: true }
+        }
+      },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+          total: { $sum: "$total" },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { "_id": 1 } }
+    ]);
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        summary: summary[0] || {
+          totalSales: 0,
+          totalTransactions: 0,
+          totalItems: 0,
+          averageSale: 0
+        },
+        dailyStats
+      }
+    });
+  } catch (error) {
+    console.error('Get monthly summary error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Error fetching monthly summary'
     });
   }
 };

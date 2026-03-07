@@ -3,6 +3,9 @@ import { useSales } from '../../context/SalesContext';
 import { useProducts } from '../../context/ProductContext';
 import { useAuth } from '../../context/AuthContext';
 import BarcodeScanner from '../Products/BarcodeScanner';
+import SaleDetails from './SaleDetails';
+import useThemeClasses from '../../context/useThemeClasses';
+import { toast } from 'react-toastify';
 
 const PointOfSale = () => {
   const {
@@ -18,12 +21,14 @@ const PointOfSale = () => {
 
   const { products, getProducts, searchByBarcode } = useProducts();
   const { user } = useAuth();
+  const theme = useThemeClasses();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [amountPaid, setAmountPaid] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
+  const [lastSale, setLastSale] = useState(null);
   const [filteredProducts, setFilteredProducts] = useState([]);
 
   useEffect(() => {
@@ -58,12 +63,12 @@ const PointOfSale = () => {
 
   const handleProcessSale = async () => {
     if (cart.length === 0) {
-      alert('Please add items to cart');
+      toast.warning('Please add items to cart');
       return;
     }
 
     if (parseFloat(amountPaid) < cartTotals.total) {
-      alert('Amount paid is less than total amount');
+      toast.warning('Amount paid is less than total amount');
       return;
     }
 
@@ -84,7 +89,8 @@ const PointOfSale = () => {
       setAmountPaid('');
       setCustomerEmail('');
       setPaymentMethod('cash');
-      alert('Sale processed successfully!');
+      setLastSale(result.data.sale);
+      toast.success('Sale processed successfully!');
     }
   };
 
@@ -97,7 +103,7 @@ const PointOfSale = () => {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Products Search & Selection */}
       <div className="lg:col-span-2">
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className={`${theme.card} rounded-lg border p-4 transition-colors duration-300`}>
           <div className="flex space-x-3 mb-4">
             <div className="flex-1">
               <input
@@ -105,12 +111,12 @@ const PointOfSale = () => {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search products by name, barcode, or category..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                className={`w-full px-3 py-2 border rounded-md transition-colors duration-200 ${theme.input} focus:ring-blue-500 focus:border-blue-500`}
               />
             </div>
             <button
               onClick={() => setShowBarcodeScanner(true)}
-              className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 flex items-center"
+              className={`px-4 py-2 rounded-md transition-colors flex items-center ${theme.isDark ? 'bg-slate-600 text-slate-200 hover:bg-slate-500' : 'bg-gray-600 text-white hover:bg-gray-700'}`}
             >
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
@@ -126,20 +132,22 @@ const PointOfSale = () => {
                 key={product._id}
                 onClick={() => handleAddToCart(product)}
                 disabled={product.quantity === 0}
-                className={`p-3 border rounded-lg text-left hover:bg-gray-50 transition-colors ${
-                  product.quantity === 0 ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
+                className={`p-3 border rounded-lg text-left transition-colors ${
+                  theme.isDark 
+                    ? 'border-slate-700 hover:bg-slate-800' 
+                    : 'border-gray-200 hover:bg-gray-50'
+                } ${product.quantity === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                <div className="text-sm font-medium text-gray-900 truncate">
+                <div className={`text-sm font-medium truncate ${theme.textPrimary}`}>
                   {product.name}
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
+                <div className={`text-xs mt-1 ${theme.textSecondary}`}>
                   {product.category}
                 </div>
-                <div className="text-sm font-semibold text-green-600 mt-1">
+                <div className={`text-sm font-semibold mt-1 ${theme.isDark ? 'text-green-400' : 'text-green-600'}`}>
                   ${product.price}
                 </div>
-                <div className="text-xs text-gray-400 mt-1">
+                <div className={`text-xs mt-1 ${theme.textMuted}`}>
                   Stock: {product.quantity}
                 </div>
               </button>
@@ -148,41 +156,41 @@ const PointOfSale = () => {
         </div>
 
         {/* Current Cart */}
-        <div className="bg-white rounded-lg border border-gray-200 p-4 mt-4">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Current Sale</h3>
+        <div className={`${theme.card} rounded-lg border p-4 mt-4 transition-colors duration-300`}>
+          <h3 className={`text-lg font-medium mb-4 ${theme.textPrimary}`}>Current Sale</h3>
           {cart.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">No items in cart</p>
+            <p className={`text-center py-8 ${theme.textSecondary}`}>No items in cart</p>
           ) : (
             <div className="space-y-3">
               {cart.map((item) => (
-                <div key={item.product._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div key={item.product._id} className={`flex items-center justify-between p-3 rounded-lg transition-colors ${theme.isDark ? 'bg-slate-800/50' : 'bg-gray-50'}`}>
                   <div className="flex-1">
-                    <div className="font-medium text-gray-900">{item.product.name}</div>
-                    <div className="text-sm text-gray-500">${item.price} each</div>
+                    <div className={`font-medium ${theme.textPrimary}`}>{item.product.name}</div>
+                    <div className={`text-sm ${theme.textSecondary}`}>${item.price} each</div>
                   </div>
                   <div className="flex items-center space-x-3">
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => updateCartItem(item.product._id, item.quantity - 1)}
-                        className="w-6 h-6 bg-gray-200 rounded flex items-center justify-center hover:bg-gray-300"
+                        className={`w-6 h-6 rounded flex items-center justify-center transition-colors ${theme.isDark ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
                       >
                         -
                       </button>
-                      <span className="w-8 text-center">{item.quantity}</span>
+                      <span className={`w-8 text-center ${theme.textPrimary}`}>{item.quantity}</span>
                       <button
                         onClick={() => updateCartItem(item.product._id, item.quantity + 1)}
                         disabled={item.quantity >= item.product.quantity}
-                        className="w-6 h-6 bg-gray-200 rounded flex items-center justify-center hover:bg-gray-300 disabled:opacity-50"
+                        className={`w-6 h-6 rounded flex items-center justify-center transition-colors disabled:opacity-50 ${theme.isDark ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
                       >
                         +
                       </button>
                     </div>
-                    <div className="font-medium text-gray-900 w-16 text-right">
+                    <div className={`font-medium w-16 text-right ${theme.textPrimary}`}>
                       ${item.total.toFixed(2)}
                     </div>
                     <button
                       onClick={() => removeFromCart(item.product._id)}
-                      className="text-red-600 hover:text-red-800"
+                      className="text-red-500 hover:text-red-700 transition-colors"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -194,7 +202,7 @@ const PointOfSale = () => {
               <div className="flex justify-end pt-4">
                 <button
                   onClick={clearCart}
-                  className="px-4 py-2 text-sm text-red-600 hover:text-red-800 font-medium"
+                  className="px-4 py-2 text-sm text-red-500 hover:text-red-700 font-medium transition-colors"
                 >
                   Clear Cart
                 </button>
@@ -205,34 +213,34 @@ const PointOfSale = () => {
       </div>
 
       {/* Payment Section */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Payment</h3>
+      <div className={`${theme.card} rounded-lg border p-4 transition-colors duration-300`}>
+        <h3 className={`text-lg font-medium mb-4 ${theme.textPrimary}`}>Payment</h3>
         
         {/* Totals */}
         <div className="space-y-2 mb-4">
           <div className="flex justify-between">
-            <span className="text-gray-600">Subtotal:</span>
-            <span className="font-medium">${cartTotals.subtotal.toFixed(2)}</span>
+            <span className={theme.textSecondary}>Subtotal:</span>
+            <span className={`font-medium ${theme.textPrimary}`}>${cartTotals.subtotal.toFixed(2)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-600">Tax (8%):</span>
-            <span className="font-medium">${cartTotals.tax.toFixed(2)}</span>
+            <span className={theme.textSecondary}>Tax (8%):</span>
+            <span className={`font-medium ${theme.textPrimary}`}>${cartTotals.tax.toFixed(2)}</span>
           </div>
-          <div className="flex justify-between text-lg font-bold border-t pt-2">
-            <span>Total:</span>
-            <span>${cartTotals.total.toFixed(2)}</span>
+          <div className={`flex justify-between text-lg font-bold border-t pt-2 ${theme.divider}`}>
+            <span className={theme.textPrimary}>Total:</span>
+            <span className={theme.textPrimary}>${cartTotals.total.toFixed(2)}</span>
           </div>
         </div>
 
         {/* Payment Method */}
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className={`block text-sm font-medium mb-2 ${theme.label}`}>
             Payment Method
           </label>
           <select
             value={paymentMethod}
             onChange={(e) => setPaymentMethod(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            className={`w-full px-3 py-2 border rounded-md transition-colors duration-200 ${theme.input} focus:ring-blue-500 focus:border-blue-500`}
           >
             <option value="cash">Cash</option>
             <option value="card">Card</option>
@@ -242,7 +250,7 @@ const PointOfSale = () => {
 
         {/* Amount Paid */}
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className={`block text-sm font-medium mb-2 ${theme.label}`}>
             Amount Paid
           </label>
           <input
@@ -251,15 +259,15 @@ const PointOfSale = () => {
             onChange={(e) => setAmountPaid(e.target.value)}
             min={cartTotals.total}
             step="0.01"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            className={`w-full px-3 py-2 border rounded-md transition-colors duration-200 ${theme.input} focus:ring-blue-500 focus:border-blue-500`}
             placeholder="0.00"
           />
         </div>
 
         {/* Change */}
         {amountPaid && (
-          <div className="mb-4 p-3 bg-green-50 rounded-lg">
-            <div className="flex justify-between font-medium text-green-800">
+          <div className={`mb-4 p-3 rounded-lg transition-colors ${theme.isDark ? 'bg-green-900/40' : 'bg-green-50'}`}>
+            <div className={`flex justify-between font-medium ${theme.isDark ? 'text-green-300' : 'text-green-800'}`}>
               <span>Change:</span>
               <span>${calculateChange().toFixed(2)}</span>
             </div>
@@ -268,14 +276,14 @@ const PointOfSale = () => {
 
         {/* Customer Email */}
         <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className={`block text-sm font-medium mb-2 ${theme.label}`}>
             Customer Email (Optional)
           </label>
           <input
             type="email"
             value={customerEmail}
             onChange={(e) => setCustomerEmail(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            className={`w-full px-3 py-2 border rounded-md transition-colors duration-200 ${theme.input} focus:ring-blue-500 focus:border-blue-500`}
             placeholder="customer@example.com"
           />
         </div>
@@ -284,13 +292,13 @@ const PointOfSale = () => {
         <button
           onClick={handleProcessSale}
           disabled={loading || cart.length === 0 || !amountPaid || parseFloat(amountPaid) < cartTotals.total}
-          className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+          className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed font-bold shadow-lg shadow-blue-900/20 active:scale-[0.98] transition-all"
         >
           {loading ? 'Processing...' : `Process Sale - $${cartTotals.total.toFixed(2)}`}
         </button>
 
         {/* Cashier Info */}
-        <div className="mt-4 pt-4 border-t text-sm text-gray-500">
+        <div className={`mt-4 pt-4 border-t text-sm transition-colors ${theme.divider} ${theme.textMuted}`}>
           <p>Cashier: {user?.name}</p>
           <p>Items: {cartTotals.itemsCount}</p>
         </div>
@@ -301,6 +309,14 @@ const PointOfSale = () => {
         <BarcodeScanner
           onClose={() => setShowBarcodeScanner(false)}
           onScan={handleBarcodeScan}
+        />
+      )}
+
+      {/* Sale Success Receipt Modal */}
+      {lastSale && (
+        <SaleDetails
+          sale={lastSale}
+          onClose={() => setLastSale(null)}
         />
       )}
     </div>

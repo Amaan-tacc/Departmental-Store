@@ -5,7 +5,8 @@ import {
   getSales,
   getSaleById,
   refundSale,
-  getTodaySummary
+  getTodaySummary,
+  getMonthlySummary
 } from '../controllers/saleController.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 import { validateSale, validateId } from '../middleware/validation.js';
@@ -17,6 +18,7 @@ router.use(authenticate);
 router.post('/', authorize('admin', 'cashier'), validateSale, processSale);
 router.get('/', getSales);
 router.get('/today/summary', getTodaySummary);
+router.get('/monthly/summary', getMonthlySummary);
 router.get('/:id', validateId, getSaleById);
 router.post('/:id/refund', authorize('admin'), validateId, refundSale);
 

@@ -1,19 +1,21 @@
-// src/App.js
-
+// src/App.jsx
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { InventoryProvider } from './context/InventoryContext';
+import { ProductProvider } from './context/ProductContext';
+import { SalesProvider } from './context/SalesContext';
+import { ThemeProvider } from './context/ThemeContext';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import Dashboard from './components/Dashboard/Dashboard';
 import InventoryDashboard from './components/Inventory/InventoryDashboard';
 import Layout from './components/Shared/Layout';
-import { ProductProvider } from './context/ProductContext';
 import ProductDashboard from './components/Products/ProductDashboard';
-import { SalesProvider } from './context/SalesContext';
-import Sale from '../../Backend/models/Sale';
 import SalesDashboard from './components/Sales/SalesDashboard';
+import Settings from './components/Settings/Settings';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -50,51 +52,66 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <InventoryProvider>
-          <ProductProvider>
-            <SalesProvider>
-            <div className="App">
-              <Routes>
-                {/* Public Routes */}
-                <Route path="/login" element={
-                  <PublicRoute>
-                    <Login />
-                  </PublicRoute>
-                } />
-                <Route path="/register" element={
-                  <PublicRoute>
-                    <Register />
-                  </PublicRoute>
-                } />
+        <ThemeProvider>
+          <InventoryProvider>
+            <ProductProvider>
+              <SalesProvider>
+                <div className="App">
+                  <Routes>
+                    {/* Public Routes */}
+                    <Route path="/login" element={
+                      <PublicRoute>
+                        <Login />
+                      </PublicRoute>
+                    } />
+                    <Route path="/register" element={
+                      <PublicRoute>
+                        <Register />
+                      </PublicRoute>
+                    } />
 
-                {/* Protected Routes with Layout */}
-                <Route path="/" element={
-                  <ProtectedRoute>
-                    <Layout />
-                  </ProtectedRoute>
-                }>
-                  <Route index element={<Navigate to="/dashboard" replace />} />
-                  <Route path="dashboard" element={<Dashboard />} />
-                  <Route path="inventory" element={<InventoryDashboard />} />
-                  <Route path="products" element={<ProductDashboard />} />
-                  <Route path="sales" element={<SalesDashboard />} />
-                </Route>
+                    {/* Protected Routes with Layout */}
+                    <Route path="/" element={
+                      <ProtectedRoute>
+                        <Layout />
+                      </ProtectedRoute>
+                    }>
+                      <Route index element={<Navigate to="/dashboard" replace />} />
+                      <Route path="dashboard" element={<Dashboard />} />
+                      <Route path="inventory" element={<InventoryDashboard />} />
+                      <Route path="products" element={<ProductDashboard />} />
+                      <Route path="sales" element={<SalesDashboard />} />
+                      <Route path="settings" element={<Settings />} />
+                    </Route>
 
-                {/* 404 Route */}
-                <Route path="*" element={
-                  <div className="min-h-screen flex items-center justify-center bg-gray-100">
-                    <div className="text-center">
-                      <h1 className="text-4xl font-bold text-gray-900 mb-4">404</h1>
-                      <p className="text-gray-600 mb-4">Page not found</p>
-                      <Navigate to="/dashboard" replace />
-                    </div>
-                  </div>
-                } />
-              </Routes>
-            </div>
-            </SalesProvider>
-          </ProductProvider>
-        </InventoryProvider>
+                    {/* 404 Route */}
+                    <Route path="*" element={
+                      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+                        <div className="text-center">
+                          <h1 className="text-4xl font-bold text-gray-900 mb-4">404</h1>
+                          <p className="text-gray-600 mb-4">Page not found</p>
+                          <Navigate to="/dashboard" replace />
+                        </div>
+                      </div>
+                    } />
+                  </Routes>
+                  <ToastContainer 
+                    position="top-right"
+                    autoClose={3000}
+                    hideProgressBar={false}
+                    newestOnTop={false}
+                    closeOnClick
+                    rtl={false}
+                    pauseOnFocusLoss
+                    draggable
+                    pauseOnHover
+                    theme="colored"
+                  />
+                </div>
+              </SalesProvider>
+            </ProductProvider>
+          </InventoryProvider>
+        </ThemeProvider>
       </AuthProvider>
     </Router>
   );
