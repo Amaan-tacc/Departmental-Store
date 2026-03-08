@@ -10,7 +10,7 @@ export const getInventory = async (req, res) => {
     const { page = 1, limit = 10, lowStock = false, category, search } = req.query;
     const storeId = req.user.store;
 
-    let query = { store: storeId, isActive: true };
+    let query = { store: storeId };
 
     if (lowStock === 'true') {
       query.$expr = { $lt: ['$quantity', '$lowStockThreshold'] };
@@ -144,7 +144,9 @@ export const updateStock = async (req, res) => {
     await product.save();
 
     // Emit real-time update
-    req.app.get('io').to(`store-${storeId}`).emit('inventoryUpdated', product);
+    const io = req.app.get('io');
+    const room = `store-${storeId._id || storeId}`;
+    io.to(room).emit('inventoryUpdated', product);
 
     res.status(200).json({
       status: 'success',
@@ -172,7 +174,6 @@ export const getLowStockAlerts = async (req, res) => {
 
     const lowStockProducts = await Product.find({
       store: storeId,
-      isActive: true,
       $expr: { $lt: ['$quantity', '$lowStockThreshold'] }
     }).sort({ quantity: 1 });
 
@@ -303,7 +304,9 @@ export const bulkUpdateInventory = async (req, res) => {
     await InventoryLog.insertMany(logs);
 
     // Emit real-time update
-    req.app.get('io').to(`store-${storeId}`).emit('inventoryUpdated');
+    const io = req.app.get('io');
+    const room = `store-${storeId._id || storeId}`;
+    io.to(room).emit('inventoryUpdated');
 
     res.status(200).json({
       status: 'success',

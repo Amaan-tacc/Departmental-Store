@@ -14,6 +14,7 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [token, setToken] = useState(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -23,14 +24,17 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuth = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (token) {
+      const storedToken = localStorage.getItem('token');
+      if (storedToken) {
+        setToken(storedToken);
         const response = await authAPI.getProfile();
         setUser(response.data.data.user);
       }
     } catch (error) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      setToken(null);
+      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -40,12 +44,13 @@ export const AuthProvider = ({ children }) => {
     try {
       setError('');
       const response = await authAPI.login({ email, password });
-      const { token, data } = response.data;
-
-      localStorage.setItem('token', token);
+      const { token: newToken, data } = response.data;
+ 
+      localStorage.setItem('token', newToken);
       localStorage.setItem('user', JSON.stringify(data.user));
+      setToken(newToken);
       setUser(data.user);
-
+ 
       return { success: true };
     } catch (error) {
       const message = error.response?.data?.message || 'Login failed';
@@ -58,12 +63,13 @@ export const AuthProvider = ({ children }) => {
     try {
       setError('');
       const response = await authAPI.register(userData);
-      const { token, data } = response.data;
-
-      localStorage.setItem('token', token);
+      const { token: newToken, data } = response.data;
+ 
+      localStorage.setItem('token', newToken);
       localStorage.setItem('user', JSON.stringify(data.user));
+      setToken(newToken);
       setUser(data.user);
-
+ 
       return { success: true };
     } catch (error) {
       const message = error.response?.data?.message || 'Registration failed';
@@ -75,6 +81,7 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    setToken(null);
     setUser(null);
     // Optional: Call logout API
     authAPI.logout().catch(console.error);
@@ -104,6 +111,7 @@ export const AuthProvider = ({ children }) => {
 
   const value = {
     user,
+    token,
     login,
     register,
     logout,
@@ -111,7 +119,8 @@ export const AuthProvider = ({ children }) => {
     changePassword,
     loading,
     error,
-    setError
+    setError,
+    refreshUser: checkAuth
   };
 
   return (

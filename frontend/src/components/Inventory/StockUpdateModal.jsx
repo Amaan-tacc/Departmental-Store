@@ -1,13 +1,14 @@
 // src/components/Inventory/StockUpdateModal.js
 import React, { useState } from 'react';
 import { useInventory } from '../../context/InventoryContext';
+import useThemeClasses from '../../context/useThemeClasses';
 
 const StockUpdateModal = ({ product, onClose, onUpdate }) => {
+  const theme = useThemeClasses();
   const { updateStock, bulkUpdateInventory } = useInventory();
   const [formData, setFormData] = useState({
     action: 'add',
-    quantity: '',
-    reason: ''
+    quantity: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -26,20 +27,15 @@ const StockUpdateModal = ({ product, onClose, onUpdate }) => {
     }
 
     try {
-      if (isBulkUpdate) {
-        // Handle bulk update logic here
-        setError('Bulk update functionality not implemented yet');
-      } else {
-        const result = await updateStock(product._id, {
-          ...formData,
-          quantity: parseInt(formData.quantity)
-        });
+      const result = await updateStock(product._id, {
+        ...formData,
+        quantity: parseInt(formData.quantity)
+      });
 
-        if (result.success) {
-          onUpdate();
-        } else {
-          setError(result.error);
-        }
+      if (result.success) {
+        onUpdate();
+      } else {
+        setError(result.error);
       }
     } catch (err) {
       setError('An unexpected error occurred');
@@ -57,10 +53,6 @@ const StockUpdateModal = ({ product, onClose, onUpdate }) => {
   };
 
   const getActionDescription = () => {
-    if (isBulkUpdate) {
-      return `Bulk ${formData.action} operation`;
-    }
-    
     switch (formData.action) {
       case 'add': return `Add ${formData.quantity || 0} units to current stock`;
       case 'subtract': return `Remove ${formData.quantity || 0} units from current stock`;
@@ -70,7 +62,7 @@ const StockUpdateModal = ({ product, onClose, onUpdate }) => {
   };
 
   const calculateNewQuantity = () => {
-    if (isBulkUpdate || !formData.quantity || formData.quantity === '') {
+    if (!formData.quantity || formData.quantity === '') {
       return product?.quantity || 0;
     }
     
@@ -84,16 +76,16 @@ const StockUpdateModal = ({ product, onClose, onUpdate }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div className="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+      <div className={`relative mx-auto p-6 border w-full max-w-md shadow-xl rounded-xl transition-colors duration-300 ${theme.card}`}>
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-medium text-gray-900">
-            {isBulkUpdate ? 'Bulk Update Stock' : `Update Stock - ${product?.name}`}
+          <h3 className={`text-xl font-bold ${theme.textPrimary}`}>
+            {`Update Stock - ${product?.name}`}
           </h3>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className={`${theme.textMuted} hover:${theme.textPrimary} transition-colors`}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -103,15 +95,15 @@ const StockUpdateModal = ({ product, onClose, onUpdate }) => {
 
         {/* Current Stock Info - Only show for single product update */}
         {!isBulkUpdate && product && (
-          <div className="bg-gray-50 rounded-lg p-4 mb-6">
+          <div className={`rounded-xl p-4 mb-6 transition-colors duration-300 ${theme.cardInner}`}>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <p className="text-gray-600">Current Stock</p>
-                <p className="font-medium text-gray-900">{product.quantity} units</p>
+                <p className={theme.textSecondary}>Current Stock</p>
+                <p className={`font-bold text-lg ${theme.textPrimary}`}>{product.quantity} units</p>
               </div>
               <div>
-                <p className="text-gray-600">Low Stock Threshold</p>
-                <p className="font-medium text-gray-900">{product.lowStockThreshold} units</p>
+                <p className={theme.textSecondary}>Threshold</p>
+                <p className={`font-bold text-lg ${theme.textPrimary}`}>{product.lowStockThreshold} units</p>
               </div>
             </div>
           </div>
@@ -119,22 +111,25 @@ const StockUpdateModal = ({ product, onClose, onUpdate }) => {
 
         {/* Error Display */}
         {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-800 text-sm">{error}</p>
+          <div className={`mb-4 p-3 rounded-lg border flex items-center gap-3 transition-colors ${theme.isDark ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-red-50 border-red-100 text-red-700'}`}>
+            <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+            <p className="text-sm font-medium">{error}</p>
           </div>
         )}
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className={`block text-sm font-semibold mb-2 ${theme.label}`}>
               Action
             </label>
             <select
               name="action"
               value={formData.action}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              className={`w-full px-4 py-2.5 rounded-lg border transition-all duration-200 outline-none focus:ring-2 ${theme.input} appearance-none`}
             >
               <option value="add">Add Stock</option>
               <option value="subtract">Remove Stock</option>
@@ -143,7 +138,7 @@ const StockUpdateModal = ({ product, onClose, onUpdate }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className={`block text-sm font-semibold mb-2 ${theme.label}`}>
               Quantity
             </label>
             <input
@@ -153,51 +148,43 @@ const StockUpdateModal = ({ product, onClose, onUpdate }) => {
               onChange={handleChange}
               min="1"
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              className={`w-full px-4 py-2.5 rounded-lg border transition-all duration-200 outline-none focus:ring-2 ${theme.input}`}
               placeholder="Enter quantity"
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Reason (Optional)
-            </label>
-            <input
-              type="text"
-              name="reason"
-              value={formData.reason}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-              placeholder="e.g., New shipment, Damage, etc."
-            />
-          </div>
-
-          {/* Preview - Only show for single product update */}
-          {!isBulkUpdate && formData.quantity && (
-            <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-              <p className="text-sm text-blue-800 font-medium mb-1">Preview</p>
-              <p className="text-sm text-blue-700">{getActionDescription()}</p>
-              <p className="text-sm text-blue-700 mt-1">
-                New stock level: <span className="font-semibold">{calculateNewQuantity()} units</span>
+          {/* Preview */}
+          {formData.quantity && (
+            <div className={`rounded-xl p-4 border transition-colors duration-300 ${theme.isDark ? 'bg-indigo-900/20 border-indigo-800/40' : 'bg-blue-50 border-blue-200'}`}>
+              <p className={`text-sm font-bold uppercase tracking-wider mb-2 ${theme.isDark ? 'text-indigo-300' : 'text-blue-800'}`}>Preview</p>
+              <p className={`text-sm ${theme.textSecondary}`}>{getActionDescription()}</p>
+              <p className={`text-sm mt-1 ${theme.textPrimary}`}>
+                New stock level: <span className="font-bold">{calculateNewQuantity()} units</span>
               </p>
             </div>
           )}
 
           {/* Actions */}
-          <div className="flex justify-end space-x-3 pt-4">
+          <div className={`flex justify-end space-x-3 pt-4 border-t ${theme.divider}`}>
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className={`px-6 py-2.5 text-sm font-semibold rounded-lg border transition-all duration-200 ${
+                theme.isDark 
+                  ? 'bg-slate-700 text-slate-300 border-slate-600 hover:bg-slate-600' 
+                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+              }`}
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`px-6 py-2.5 text-sm font-semibold text-white rounded-lg transition-all duration-200 ${
+                theme.isDark ? 'bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-900/40' : 'bg-blue-600 hover:bg-blue-700'
+              } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed`}
             >
-              {loading ? 'Updating...' : (isBulkUpdate ? 'Bulk Update' : 'Update Stock')}
+              {loading ? 'Updating...' : 'Update Stock'}
             </button>
           </div>
         </form>

@@ -15,6 +15,7 @@ import productRoutes from './routes/products.js';
 import saleRoutes from './routes/sales.js';
 import inventoryRoutes from './routes/inventory.js';
 import reportRoutes from './routes/reports.js';
+import storeRoutes from './routes/stores.js';
 
 dotenv.config();
 
@@ -22,8 +23,9 @@ const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
-    methods: ["GET", "POST", "PUT", "DELETE"]
+    origin: ["http://localhost:3000", "http://localhost:5173", "http://localhost:5174", process.env.FRONTEND_URL].filter(Boolean),
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true
   }
 });
 
@@ -39,9 +41,10 @@ app.use(express.urlencoded({ extended: true }));
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
   
-  socket.on('join-store', (storeId) => {
-    socket.join(`store-${storeId}`);
-    console.log(`Client ${socket.id} joined store ${storeId}`);
+  socket.on('joinStore', (storeId) => {
+    const roomId = typeof storeId === 'object' ? storeId._id : storeId;
+    socket.join(`store-${roomId}`);
+    console.log(`Client ${socket.id} joined store ${roomId}`);
   });
   
   socket.on('disconnect', () => {
@@ -58,6 +61,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/sales', saleRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/stores', storeRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

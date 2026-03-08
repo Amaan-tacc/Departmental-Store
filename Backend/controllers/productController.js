@@ -14,9 +14,7 @@ export const getCategories = async (req, res) => {
     
     // Get categories from products (existing functionality)
     const categoriesFromProducts = await Product.distinct('category', { 
-      store: storeId, 
-      isActive: true 
-    });
+      store: storeId    });
 
     // Get additional categories from our storage
     const storedCategories = storeCategories.get(storeId) || [];
@@ -59,8 +57,7 @@ export const createCategory = async (req, res) => {
     // Check if category exists in products
     const existingInProducts = await Product.findOne({
       store: storeId,
-      category: categoryName,
-      isActive: true
+      category: categoryName
     });
 
     // Check if category exists in our storage
@@ -78,9 +75,7 @@ export const createCategory = async (req, res) => {
 
     // Get updated list
     const categoriesFromProducts = await Product.distinct('category', { 
-      store: storeId, 
-      isActive: true 
-    });
+      store: storeId    });
     const allCategories = [...new Set([...categoriesFromProducts, ...storedCategories])];
 
     res.status(201).json({
@@ -111,8 +106,7 @@ export const deleteCategory = async (req, res) => {
     // Check if any products are using this category
     const productsInCategory = await Product.countDocuments({
       store: storeId,
-      category: name,
-      isActive: true
+      category: name
     });
 
     if (productsInCategory > 0) {
@@ -129,9 +123,7 @@ export const deleteCategory = async (req, res) => {
 
     // Get updated list
     const categoriesFromProducts = await Product.distinct('category', { 
-      store: storeId, 
-      isActive: true 
-    });
+      store: storeId    });
     const allCategories = [...new Set([...categoriesFromProducts, ...updatedStoredCategories])];
 
     res.status(200).json({
@@ -158,7 +150,7 @@ export const getProducts = async (req, res) => {
     const { page = 1, limit = 10, search, category, lowStock } = req.query;
     const storeId = req.user.store;
 
-    let query = { store: storeId, isActive: true };
+    let query = { store: storeId };
 
     // Search functionality
     if (search) {
@@ -263,7 +255,9 @@ export const createProduct = async (req, res) => {
     await product.save();
 
     // Emit real-time update
-    req.app.get('io').to(`store-${storeId}`).emit('productCreated', product);
+    const io = req.app.get('io');
+    const room = `store-${storeId._id || storeId}`;
+    io.to(room).emit('productCreated', product);
 
     res.status(201).json({
       status: 'success',
@@ -321,7 +315,9 @@ export const updateProduct = async (req, res) => {
     }
 
     // Emit real-time update
-    req.app.get('io').to(`store-${storeId}`).emit('productUpdated', product);
+    const io = req.app.get('io');
+    const room = `store-${storeId._id || storeId}`;
+    io.to(room).emit('productUpdated', product);
 
     res.status(200).json({
       status: 'success',
@@ -355,11 +351,7 @@ export const deleteProduct = async (req, res) => {
     const { id } = req.params;
     const storeId = req.user.store;
 
-    const product = await Product.findOneAndUpdate(
-      { _id: id, store: storeId },
-      { isActive: false },
-      { new: true }
-    );
+    const product = await Product.findOneAndDelete({ _id: id, store: storeId });
 
     if (!product) {
       return res.status(404).json({
@@ -369,7 +361,9 @@ export const deleteProduct = async (req, res) => {
     }
 
     // Emit real-time update
-    req.app.get('io').to(`store-${storeId}`).emit('productDeleted', id);
+    const io = req.app.get('io');
+    const room = `store-${storeId._id || storeId}`;
+    io.to(room).emit('productDeleted', id);
 
     res.status(200).json({
       status: 'success',
@@ -394,8 +388,7 @@ export const searchByBarcode = async (req, res) => {
 
     const product = await Product.findOne({ 
       barcode, 
-      store: storeId, 
-      isActive: true 
+      store: storeId
     });
 
     if (!product) {

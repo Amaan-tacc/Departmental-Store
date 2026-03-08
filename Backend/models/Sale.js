@@ -1,5 +1,6 @@
 // models/Sale.js
 import mongoose from 'mongoose';
+import Counter from './Counter.js';
 
 const saleItemSchema = new mongoose.Schema({
   product: {
@@ -9,8 +10,7 @@ const saleItemSchema = new mongoose.Schema({
   },
   quantity: {
     type: Number,
-    required: true,
-    min: 1
+    required: true
   },
   price: {
     type: Number,
@@ -19,8 +19,7 @@ const saleItemSchema = new mongoose.Schema({
   },
   total: {
     type: Number,
-    required: true,
-    min: 0
+    required: true
   }
 });
 
@@ -33,18 +32,15 @@ const saleSchema = new mongoose.Schema({
   items: [saleItemSchema],
   subtotal: {
     type: Number,
-    required: true,
-    min: 0
+    required: true
   },
   tax: {
     type: Number,
-    default: 0,
-    min: 0
+    default: 0
   },
   total: {
     type: Number,
-    required: true,
-    min: 0
+    required: true
   },
   paymentMethod: {
     type: String,
@@ -54,7 +50,7 @@ const saleSchema = new mongoose.Schema({
   amountPaid: {
     type: Number,
     required: true,
-    min: 0
+    default: 0
   },
   change: {
     type: Number,
@@ -98,42 +94,23 @@ saleSchema.index({ cashier: 1 });
 saleSchema.index({ createdAt: 1 });
 saleSchema.index({ paymentMethod: 1 });
 
-// Generate sale number before saving - FIXED VERSION
+// Generate sale number before saving
 saleSchema.pre('save', async function(next) {
   if (this.isNew && !this.saleNumber) {
     try {
-      // Use a counter collection to generate sequential numbers
-      const Counter = mongoose.model('Counter');
-      let counter;
-      
-      try {
-        counter = await Counter.findOneAndUpdate(
-          { name: 'saleNumber' },
-          { $inc: { value: 1 } },
-          { new: true, upsert: true }
-        );
-      } catch (error) {
-        // If Counter model doesn't exist, create a simple fallback
-        const lastSale = await mongoose.model('Sale')
-          .findOne({}, {}, { sort: { createdAt: -1 } })
-          .select('saleNumber');
-        
-        let nextNumber = 1;
-        if (lastSale && lastSale.saleNumber) {
-          const lastNumber = parseInt(lastSale.saleNumber.split('-')[1]) || 0;
-          nextNumber = lastNumber + 1;
-        }
-        
-        this.saleNumber = `SALE-${String(nextNumber).padStart(6, '0')}`;
-        return next();
-      }
+      // Atomic increment
+      const counter = await Counter.findOneAndUpdate(
+        { name: 'saleNumber' },
+        { $inc: { value: 1 } },
+        { new: true, upsert: true }
+      );
       
       this.saleNumber = `SALE-${String(counter.value).padStart(6, '0')}`;
       next();
     } catch (error) {
-      // Fallback to timestamp-based number
-      const timestamp = Date.now();
-      this.saleNumber = `SALE-${timestamp}`;
+      console.error('Sale number generation error:', error);
+      // Fallback to timestamp if counter fails
+      this.saleNumber = `SALE-${Date.now()}`;
       next();
     }
   } else {

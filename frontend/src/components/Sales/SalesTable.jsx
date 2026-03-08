@@ -128,11 +128,10 @@ const SalesTable = ({
     // Calculate summary from sales data as fallback
     console.log('🔄 Calculating summary from sales data');
     const calculated = safeSales.reduce((acc, sale) => {
-      if (!sale.isRefund) {
-        acc.totalSales += sale.total || 0;
-        acc.totalTransactions += 1;
-        acc.totalTax += sale.tax || 0;
-      }
+      acc.totalSales += sale.total || 0;
+      acc.totalTransactions += (sale.isRefund ? 0 : 1); // Only count actual sales as transactions? 
+      // Or maybe count all? Let's count all for now to match backend $sum: 1
+      acc.totalTax += sale.tax || 0;
       return acc;
     }, { totalSales: 0, totalTransactions: 0, totalTax: 0 });
 
@@ -278,8 +277,8 @@ const SalesTable = ({
           <tbody className={`${theme.tableBody} transition-colors duration-300`}>
             {safeSales.map((sale) => (
               <tr key={sale._id} className={`transition-colors duration-150 ${theme.tableRowHover}`}>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div>
+                <td className="px-6 py-4">
+                  <div className="min-w-0 max-w-[200px] md:max-w-xs">
                     <div className={`text-sm font-medium ${theme.textPrimary}`}>
                       {sale.saleNumber || 'N/A'}
                     </div>
@@ -287,19 +286,21 @@ const SalesTable = ({
                       {formatDate(sale.createdAt)}
                     </div>
                     {sale.customerEmail && (
-                      <div className={`text-xs ${theme.textMuted} truncate max-w-xs`}>
+                      <div className={`text-xs ${theme.textMuted} truncate hover:whitespace-normal hover:break-all cursor-help`} title={sale.customerEmail}>
                         {sale.customerEmail}
                       </div>
                     )}
                   </div>
                 </td>
                 <td className="px-6 py-4">
-                  <div className={`text-sm ${theme.textPrimary}`}>
-                    {sale.items?.length || 0} items
-                  </div>
-                  <div className={`text-xs ${theme.textSecondary} truncate max-w-xs`}>
-                    {sale.items?.slice(0, 2).map(item => item.product?.name || 'Unknown Product').join(', ')}
-                    {sale.items?.length > 2 && '...'}
+                  <div className="min-w-0 max-w-[200px] md:max-w-xs">
+                    <div className={`text-sm ${theme.textPrimary}`}>
+                      {sale.items?.length || 0} items
+                    </div>
+                    <div className={`text-xs ${theme.textSecondary} truncate hover:whitespace-normal hover:break-words cursor-help`} title={sale.items?.map(item => item.product?.name || item.productId?.name).join(', ')}>
+                      {sale.items?.slice(0, 2).map(item => item.product?.name || item.productId?.name || 'Unknown Product').join(', ')}
+                      {sale.items?.length > 2 && '...'}
+                    </div>
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">

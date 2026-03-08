@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { useProducts } from '../../context/ProductContext';
+import useThemeClasses from '../../context/useThemeClasses';
 
 const CategoryManager = ({ onClose, onCategorySelect }) => {
+  const theme = useThemeClasses();
   const { 
     categories, 
     createCategory, 
@@ -67,14 +69,14 @@ const CategoryManager = ({ onClose, onCategorySelect }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div className="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+      <div className={`relative mx-auto p-6 border w-full max-w-md shadow-xl rounded-xl transition-colors duration-300 ${theme.card}`}>
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-medium text-gray-900">Manage Categories</h3>
+          <h3 className={`text-xl font-bold ${theme.textPrimary}`}>Manage Categories</h3>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className={`${theme.textMuted} hover:${theme.textPrimary} transition-colors`}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -84,13 +86,11 @@ const CategoryManager = ({ onClose, onCategorySelect }) => {
 
         {/* Error Display */}
         {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-            <div className="flex items-center">
-              <svg className="w-5 h-5 text-red-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
-              <span className="text-red-800 text-sm">{error}</span>
-            </div>
+          <div className={`mb-4 p-3 rounded-lg border flex items-center gap-3 transition-colors ${theme.isDark ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-red-50 border-red-100 text-red-700'}`}>
+            <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+            <p className="text-sm font-medium">{error}</p>
           </div>
         )}
 
@@ -104,14 +104,16 @@ const CategoryManager = ({ onClose, onCategorySelect }) => {
                 setNewCategory(e.target.value);
                 if (error) clearError();
               }}
-              placeholder="Enter new category name"
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Enter category name"
+              className={`flex-1 px-4 py-2.5 rounded-lg border transition-all duration-200 outline-none focus:ring-2 ${theme.input}`}
               disabled={actionLoading}
             />
             <button
               type="submit"
               disabled={actionLoading || !newCategory.trim()}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`px-6 py-2.5 rounded-lg font-semibold text-white transition-all duration-200 ${
+                theme.isDark ? 'bg-indigo-600 hover:bg-indigo-500' : 'bg-blue-600 hover:bg-blue-700'
+              } disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               {actionLoading ? 'Adding...' : 'Add'}
             </button>
@@ -119,18 +121,18 @@ const CategoryManager = ({ onClose, onCategorySelect }) => {
         </form>
 
         {/* Categories List */}
-        <div className="max-h-64 overflow-y-auto">
-          <h4 className="text-sm font-medium text-gray-700 mb-3">Existing Categories ({categories.length})</h4>
+        <div className="max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+          <h4 className={`text-sm font-semibold uppercase tracking-wider ${theme.textSecondary} mb-4`}>Existing Categories ({categories.length})</h4>
           {categories.length === 0 ? (
-            <p className="text-sm text-gray-500 text-center py-4">No categories found</p>
+            <p className={`text-sm ${theme.textMuted} text-center py-4`}>No categories found</p>
           ) : (
             <div className="space-y-2">
               {categories.map((category) => (
                 <div
                   key={category}
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border"
+                  className={`flex items-center justify-between p-3 rounded-xl border transition-colors duration-200 ${theme.cardInner}`}
                 >
-                  <span className="text-sm font-medium text-gray-700">{category}</span>
+                  <span className={`text-sm font-bold ${theme.textPrimary}`}>{category}</span>
                   <div className="flex space-x-2">
                     {onCategorySelect && (
                       <button
@@ -154,17 +156,21 @@ const CategoryManager = ({ onClose, onCategorySelect }) => {
           )}
         </div>
 
-        {/* Debug Info (remove in production) */}
-        <div className="mt-4 p-2 bg-gray-100 rounded text-xs">
-          <p>Categories count: {categories.length}</p>
-          <p>Last update: {new Date().toLocaleTimeString()}</p>
+        {/* Status Info */}
+        <div className={`mt-6 p-3 rounded-lg flex items-center justify-between text-[10px] uppercase tracking-widest font-bold ${theme.isDark ? 'bg-slate-800 text-slate-500' : 'bg-gray-100 text-gray-400'}`}>
+          <span>Count: {categories.length}</span>
+          <span>Sync: {new Date().toLocaleTimeString()}</span>
         </div>
 
         {/* Actions */}
-        <div className="flex justify-end space-x-3 pt-4 mt-4 border-t">
+        <div className={`flex justify-end space-x-3 pt-6 mt-6 border-t ${theme.divider}`}>
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            className={`px-6 py-2.5 text-sm font-semibold rounded-lg border transition-all duration-200 ${
+              theme.isDark 
+                ? 'bg-slate-700 text-slate-300 border-slate-600 hover:bg-slate-600' 
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+            }`}
           >
             Close
           </button>

@@ -30,8 +30,8 @@ const SaleDetails = ({ sale, onClose }) => {
       <div className={`relative top-20 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md transition-colors duration-300 print:bg-white print:text-black print:border-0 print:shadow-none print:top-0 print:max-w-none print-receipt ${theme.card}`}>
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className={`text-lg font-medium print:text-black ${theme.textPrimary}`}>Sale Details - {sale.saleNumber}</h3>
+          <div className="flex-1 min-w-0 pr-4">
+            <h3 className={`text-lg font-medium print:text-black truncate ${theme.textPrimary}`}>Sale Details - {sale.saleNumber}</h3>
             <p className={`mt-1 print:text-gray-600 ${theme.textSecondary}`}>{formatDate(sale.createdAt)}</p>
           </div>
           <button
@@ -55,16 +55,16 @@ const SaleDetails = ({ sale, onClose }) => {
                 {sale.items.map((item, index) => (
                   <div key={index} className="px-6 py-4">
                     <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <div className={`font-medium print:text-black ${theme.textPrimary}`}>
-                          {item.product?.name || 'Product Not Found'}
+                      <div className="flex-1 min-w-0">
+                        <div className={`font-medium print:text-black break-words ${theme.textPrimary}`}>
+                          {item.product?.name || item.productId?.name || 'Product Not Found'}
                         </div>
-                        <div className={`text-sm mt-1 print:text-gray-600 ${theme.textSecondary}`}>
-                          {item.product?.barcode && `Barcode: ${item.product.barcode}`}
-                          {item.product?.category && ` • ${item.product.category}`}
+                        <div className={`text-sm mt-1 print:text-gray-600 break-words ${theme.textSecondary}`}>
+                          {(item.product?.barcode || item.productId?.barcode) && `Barcode: ${item.product?.barcode || item.productId?.barcode}`}
+                          {(item.product?.category || item.productId?.category) && ` • ${item.product?.category || item.productId?.category}`}
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right ml-4 shrink-0">
                         <div className={`font-medium print:text-black ${theme.textPrimary}`}>
                           ${item.total.toFixed(2)}
                         </div>
@@ -87,22 +87,22 @@ const SaleDetails = ({ sale, onClose }) => {
                 <h4 className={`text-lg font-medium print:text-black ${theme.textPrimary}`}>Payment Information</h4>
               </div>
               <div className="p-6 space-y-3">
-                <div className="flex justify-between">
-                  <span className={`print:text-gray-600 ${theme.textSecondary}`}>Payment Method:</span>
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${getPaymentMethodColor(sale.paymentMethod)}`}>
+                <div className="flex justify-between items-start gap-2">
+                  <span className={`print:text-gray-600 shrink-0 ${theme.textSecondary}`}>Payment Method:</span>
+                  <span className={`px-2 py-1 text-xs font-medium rounded-full truncate ${getPaymentMethodColor(sale.paymentMethod)}`}>
                     {sale.paymentMethod.toUpperCase()}
                   </span>
                 </div>
                 {sale.isRefund && (
-                  <div className="flex justify-between">
-                    <span className={`print:text-gray-600 ${theme.textSecondary}`}>Refund Reason:</span>
-                    <span className="text-red-600 font-medium">{sale.refundReason}</span>
+                  <div className="flex justify-between items-start gap-2">
+                    <span className={`print:text-gray-600 shrink-0 ${theme.textSecondary}`}>Refund Reason:</span>
+                    <span className="text-red-600 font-medium break-words">{sale.refundReason}</span>
                   </div>
                 )}
                 {sale.originalSale && (
-                  <div className="flex justify-between">
-                    <span className={`print:text-gray-600 ${theme.textSecondary}`}>Original Sale:</span>
-                    <span className={`font-medium print:text-black ${theme.textPrimary}`}>{sale.originalSale}</span>
+                  <div className="flex justify-between items-start gap-2">
+                    <span className={`print:text-gray-600 shrink-0 ${theme.textSecondary}`}>Original Sale:</span>
+                    <span className={`font-medium print:text-black truncate ${theme.textPrimary}`}>{sale.originalSale}</span>
                   </div>
                 )}
               </div>
@@ -147,20 +147,20 @@ const SaleDetails = ({ sale, onClose }) => {
                 <h4 className={`text-lg font-medium print:text-black ${theme.textPrimary}`}>Cashier Information</h4>
               </div>
               <div className="p-6 space-y-2">
-                <div>
+                <div className="min-w-0">
                   <span className={`print:text-gray-600 ${theme.textSecondary}`}>Cashier:</span>
-                  <div className={`font-medium print:text-black ${theme.textPrimary}`}>{sale.cashier?.fullname || 'N/A'}</div>
+                  <div className={`font-medium print:text-black break-words ${theme.textPrimary}`}>{sale.cashier?.fullname || 'N/A'}</div>
                 </div>
                 {sale.cashier?.email && (
-                  <div>
+                  <div className="min-w-0">
                     <span className={`print:text-gray-600 ${theme.textSecondary}`}>Email:</span>
-                    <div className={`text-sm print:text-black ${theme.textPrimary}`}>{sale.cashier.email}</div>
+                    <div className={`text-sm print:text-black break-all ${theme.textPrimary}`}>{sale.cashier.email}</div>
                   </div>
                 )}
                 {sale.customerEmail && (
-                  <div>
+                  <div className="min-w-0">
                     <span className={`print:text-gray-600 ${theme.textSecondary}`}>Customer Email:</span>
-                    <div className={`text-sm print:text-black ${theme.textPrimary}`}>{sale.customerEmail}</div>
+                    <div className={`text-sm print:text-black break-all ${theme.textPrimary}`}>{sale.customerEmail}</div>
                   </div>
                 )}
               </div>

@@ -4,6 +4,8 @@ import { useSales } from '../../context/SalesContext';
 import useThemeClasses from '../../context/useThemeClasses';
 
 import { useAuth } from '../../context/AuthContext';
+import { useSocket } from '../../context/SocketContext';
+import { useCallback } from 'react';
 
 const TodaySummary = () => {
   const { getTodaySummary } = useSales();
@@ -21,31 +23,108 @@ const TodaySummary = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const loadSummary = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const result = await getTodaySummary();
-        
-        if (result.success) {
-          setSummaryData(result.data);
-        } else {
-          setError(result.error || 'Failed to load summary');
-        }
-      } catch (err) {
-        setError('An error occurred while loading summary');
-      } finally {
-        setLoading(false);
-      }
-    };
+  const { socket, isConnected } = useSocket();
 
+  const loadSummary = useCallback(async () => {
+    try {
+      // Don't show full loading state on background refresh to avoid flickering
+      setError(null);
+      const result = await getTodaySummary();
+      
+      if (result.success) {
+        setSummaryData(result.data);
+      } else {
+        setError(result.error || 'Failed to load summary');
+      }
+    } catch (err) {
+      setError('An error occurred while loading summary');
+    } finally {
+      setLoading(false);
+    }
+  }, [getTodaySummary]); // Removed summaryData.summary.totalSales dependency to stabilize
+
+  useEffect(() => {
     loadSummary();
-    
-    // Refresh every 30 seconds
-    const interval = setInterval(loadSummary, 30000);
-    return () => clearInterval(interval);
-  }, [getTodaySummary]);
+  }, [loadSummary]);
+
+  // Real-time updates via socket
+  useEffect(() => {
+    if (socket && isConnected) {
+      const handleUpdate = (data) => {
+        console.log('🚀 REAL-TIME UPDATE RECEIVED in TodaySummary:', data);
+        
+        // Handle both direct sale object and wrapped payload for robustness
+        const sale = data?.sale || data;
+        
+        if (!sale) {
+          console.warn('⚠️ Received socket update but no sale data found');
+          return;
+        }
+        
+        // Optimistic update if we have sale data
+        if (sale && sale.total !== undefined) {
+          setSummaryData(prev => {
+            const isRefund = sale.isRefund || sale.paymentMethod === 'refund' || sale.total < 0;
+            
+            const newTotalSales = (prev.summary?.totalSales || 0) + (sale.total || 0);
+            const newTotalTransactions = (prev.summary?.totalTransactions || 0) + (isRefund ? 0 : 1);
+            const newTotalItems = (prev.summary?.totalItems || 0) + 
+              (sale.items?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0);
+            
+            // Update cashier stats
+            const newCashierStats = [...(prev.cashierStats || [])];
+            const cashierId = sale.cashier?._id || sale.cashier;
+            const cashierName = sale.cashier?.fullname || sale.cashierName || 'Cashier';
+            
+            const cashierIndex = newCashierStats.findIndex(c => {
+               const cId = c.cashierId?._id || c.cashierId || c._id;
+               return cId === cashierId;
+            });
+            
+            if (cashierIndex !== -1) {
+              newCashierStats[cashierIndex] = {
+                ...newCashierStats[cashierIndex],
+                totalSales: (newCashierStats[cashierIndex].totalSales || 0) + (sale.total || 0),
+                transactionCount: (newCashierStats[cashierIndex].transactionCount || 0) + (isRefund ? 0 : 1)
+              };
+            } else if (!isRefund) {
+              // Add new cashier to stats if not a refund
+              newCashierStats.push({
+                cashierId: cashierId,
+                cashierName: cashierName,
+                totalSales: sale.total,
+                transactionCount: 1
+              });
+            }
+            
+            return {
+              ...prev,
+              summary: {
+                ...prev.summary,
+                totalSales: newTotalSales,
+                totalTransactions: newTotalTransactions,
+                totalItems: newTotalItems,
+                averageSale: newTotalTransactions > 0 ? newTotalSales / newTotalTransactions : 0
+              },
+              cashierStats: newCashierStats.sort((a, b) => b.totalSales - a.totalSales)
+            };
+          });
+        }
+
+        // Background refresh to ensure server source of truth sync
+        // Small delay to ensure DB has committed and indexed the new sale
+        setTimeout(loadSummary, 500);
+      };
+
+      socket.on('saleProcessed', handleUpdate);
+      socket.on('saleRefunded', handleUpdate); 
+
+      return () => {
+        socket.off('saleProcessed', handleUpdate);
+        socket.off('saleRefunded', handleUpdate);
+      };
+    }
+  }, [socket, isConnected, loadSummary]);
 
   const formatCurrency = (value) => {
     const num = Number(value) || 0;

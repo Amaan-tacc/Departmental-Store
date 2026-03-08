@@ -1,6 +1,7 @@
-// context/SalesContext.js
-import React, { createContext, useState, useContext, useCallback } from 'react';
+import React, { createContext, useState, useContext, useCallback, useEffect, useMemo } from 'react';
 import { salesAPI } from '../services/api';
+import { useAuth } from './AuthContext';
+import { useSocket } from './SocketContext';
 
 const SalesContext = createContext();
 
@@ -13,9 +14,14 @@ export const useSales = () => {
 };
 
 export const SalesProvider = ({ children }) => {
+  const { user } = useAuth();
+  const { socket, isConnected } = useSocket();
   const [sales, setSales] = useState([]);
   const [currentSale, setCurrentSale] = useState(null);
-  const [cart, setCart] = useState([]);
+  const [cart, setCart] = useState(() => {
+    const savedCart = localStorage.getItem('cart');
+    return savedCart ? JSON.parse(savedCart) : [];
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [pagination, setPagination] = useState({
@@ -31,6 +37,12 @@ export const SalesProvider = ({ children }) => {
     totalTransactions: 0,
     totalTax: 0
   });
+
+  // Persist cart to localStorage
+  useEffect(() => {
+    localStorage.setItem('cart', JSON.stringify(cart));
+  }, [cart]);
+
 
 // In your SalesContext, update the getSales function:
 const getSales = useCallback(async (filters = {}) => {
@@ -163,7 +175,11 @@ const getSales = useCallback(async (filters = {}) => {
       if (existingItem) {
         return prevCart.map(item =>
           item.product._id === product._id
-            ? { ...item, quantity: item.quantity + quantity }
+            ? { 
+                ...item, 
+                quantity: item.quantity + quantity,
+                total: (item.quantity + quantity) * item.price
+              }
             : item
         );
       } else {
@@ -205,9 +221,10 @@ const getSales = useCallback(async (filters = {}) => {
   }, []);
 
   // Calculate cart totals
-  const cartTotals = React.useMemo(() => {
+  const cartTotals = useMemo(() => {
     const subtotal = cart.reduce((sum, item) => sum + item.total, 0);
-    const taxRate = 8.0;
+    // Use store tax rate or default to 8.0
+    const taxRate = user?.store?.taxRate !== undefined ? user.store.taxRate : 8.0;
     const tax = subtotal * (taxRate / 100);
     const total = subtotal + tax;
 
@@ -215,9 +232,10 @@ const getSales = useCallback(async (filters = {}) => {
       subtotal,
       tax,
       total,
+      taxRate,
       itemsCount: cart.reduce((count, item) => count + item.quantity, 0)
     };
-  }, [cart]);
+  }, [cart, user]);
 
   const clearError = useCallback(() => {
     setError('');

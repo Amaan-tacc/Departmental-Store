@@ -2,27 +2,21 @@
 import mongoose from 'mongoose';
 import Sale from '../models/Sale.js';
 import Product from '../models/Product.js';
+import Counter from '../models/Counter.js';
 
 // Helper function to generate sale number
 const generateSaleNumber = async (session) => {
   try {
-    const lastSale = await Sale.findOne({}, {}, { 
-      sort: { createdAt: -1 },
-      session 
-    }).select('saleNumber');
+    // Atomic increment with session support
+    const counter = await Counter.findOneAndUpdate(
+      { name: 'saleNumber' },
+      { $inc: { value: 1 } },
+      { new: true, upsert: true, session }
+    );
     
-    let nextNumber = 1;
-    if (lastSale && lastSale.saleNumber) {
-      // Extract number from format like "SALE-000001"
-      const matches = lastSale.saleNumber.match(/\d+/);
-      if (matches) {
-        nextNumber = parseInt(matches[0]) + 1;
-      }
-    }
-    
-    return `SALE-${String(nextNumber).padStart(6, '0')}`;
+    return `SALE-${String(counter.value).padStart(6, '0')}`;
   } catch (error) {
-    // Fallback to timestamp-based number
+    console.error('Sale number generation error:', error);
     return `SALE-${Date.now()}`;
   }
 };
@@ -76,8 +70,8 @@ export const processSale = async (req, res) => {
 
     // Calculate totals
     const taxRate = req.user.store.taxRate || 8.0;
-    const tax = subtotal * (taxRate / 100);
-    const total = subtotal + tax;
+    const tax = (req.body.tax !== undefined) ? parseFloat(req.body.tax) : (subtotal * (taxRate / 100));
+    const total = (req.body.total !== undefined) ? parseFloat(req.body.total) : (subtotal + tax);
     const change = amountPaid - total;
 
     if (change < 0) {
@@ -115,8 +109,9 @@ export const processSale = async (req, res) => {
 
     // Emit real-time updates
     const io = req.app.get('io');
-    io.to(`store-${storeId}`).emit('saleProcessed', populatedSale);
-    io.to(`store-${storeId}`).emit('inventoryUpdated');
+    const room = `store-${storeId._id || storeId}`;
+    io.to(room).emit('saleProcessed', populatedSale);
+    io.to(room).emit('inventoryUpdated');
 
     res.status(201).json({
       status: 'success',
@@ -323,8 +318,9 @@ export const refundSale = async (req, res) => {
 
     // Emit real-time updates
     const io = req.app.get('io');
-    io.to(`store-${storeId}`).emit('refundProcessed', refundSale);
-    io.to(`store-${storeId}`).emit('inventoryUpdated');
+    const room = `store-${storeId._id || storeId}`;
+    io.to(room).emit('saleRefunded', refundSale);
+    io.to(room).emit('inventoryUpdated');
 
     res.status(200).json({
       status: 'success',
@@ -381,8 +377,7 @@ export const getTodaySummary = async (req, res) => {
           createdAt: {
             $gte: today,
             $lt: tomorrow
-          },
-          isRefund: { $ne: true }
+          }
         }
       },
       {
@@ -412,8 +407,7 @@ export const getTodaySummary = async (req, res) => {
           createdAt: {
             $gte: today,
             $lt: tomorrow
-          },
-          isRefund: { $ne: true }
+          }
         }
       },
       {
@@ -442,8 +436,7 @@ export const getTodaySummary = async (req, res) => {
     const testSummary = await Sale.aggregate([
       {
         $match: {
-          store: storeObjectId,
-          isRefund: { $ne: true }
+          store: storeObjectId
         }
       },
       {
@@ -512,8 +505,7 @@ export const getMonthlySummary = async (req, res) => {
           createdAt: {
             $gte: firstDayOfMonth,
             $lte: lastDayOfMonth
-          },
-          isRefund: { $ne: true }
+          }
         }
       },
       {
@@ -543,8 +535,7 @@ export const getMonthlySummary = async (req, res) => {
           createdAt: {
             $gte: firstDayOfMonth,
             $lte: lastDayOfMonth
-          },
-          isRefund: { $ne: true }
+          }
         }
       },
       {
