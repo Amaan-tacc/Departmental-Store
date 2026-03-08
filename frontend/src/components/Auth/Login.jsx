@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Store, Mail, Lock, LogIn } from 'lucide-react';
+import { Store, Mail, Lock, LogIn, Eye, EyeOff } from 'lucide-react';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -10,6 +10,7 @@ const Login = () => {
     password: ''
   });
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { login, error, setError } = useAuth();
   const navigate = useNavigate();
 
@@ -47,22 +48,12 @@ const Login = () => {
             <Store className="text-white w-10 h-10" />
           </div>
           <h1 className="text-5xl font-extrabold text-white tracking-tight mb-4">
-            Welcome to <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-blue-400">StoreMaster</span>
+            Welcome to <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-blue-400">Store Master</span>
           </h1>
           <p className="text-slate-400 text-lg leading-relaxed">
             Manage your inventory, track sales, and grow your departmental store with our premium all-in-one solution. Efficiency redefined.
           </p>
           
-          <div className="mt-12 grid grid-cols-2 gap-4 w-full">
-            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm">
-              <p className="text-white font-bold text-2xl mb-1">99.9%</p>
-              <p className="text-slate-500 text-sm">System Uptime</p>
-            </div>
-            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm">
-              <p className="text-white font-bold text-2xl mb-1">10k+</p>
-              <p className="text-slate-500 text-sm">Transactions</p>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -74,7 +65,7 @@ const Login = () => {
             <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-600/30 mb-4">
               <Store className="text-white w-8 h-8" />
             </div>
-            <h2 className="text-3xl font-bold text-slate-900">StoreMaster</h2>
+            <h2 className="text-3xl font-bold text-slate-900">Store Master</h2>
             <p className="text-slate-500 mt-2">Sign in to continue</p>
           </div>
 
@@ -119,13 +110,20 @@ const Login = () => {
                 </div>
                 <input
                   name="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   required
                   value={formData.password}
                   onChange={handleChange}
-                  className="block w-full pl-11 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all duration-200 shadow-sm"
+                  className="block w-full pl-11 pr-12 py-3.5 bg-white border border-slate-200 rounded-2xl text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all duration-200 shadow-sm"
                   placeholder="Enter your password"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-indigo-600 transition-colors"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
             </div>
 

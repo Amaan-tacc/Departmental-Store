@@ -12,13 +12,17 @@ import {
   LogOut,
   Store,
   UserCircle,
+  Menu,
+  X,
+  Sun,
+  Moon,
 } from 'lucide-react';
 
 const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const { user, logout } = useAuth();
-  const { theme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const isDark = theme === 'dark';
 
@@ -57,23 +61,43 @@ const Layout = () => {
       {/* ── Full-width Header ── */}
       <header className={`flex-shrink-0 flex items-center h-16 shadow-md z-20 w-full transition-colors duration-300 print:hidden ${headerBg}`}>
 
+        {/* Hamburger Menu (Mobile Only) */}
+        <div className="md:hidden flex items-center px-4">
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className={`p-2 rounded-lg transition-colors focus:outline-none ${navInactive}`}
+          >
+            {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
+
         {/* Brand – aligned with sidebar width */}
-        <div className={`flex items-center gap-3 w-64 px-5 border-r h-full flex-shrink-0 ${brandBorder}`}>
+        <div className={`hidden md:flex items-center gap-3 w-64 px-5 border-r h-full flex-shrink-0 ${brandBorder}`}>
           <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-500">
             <Store size={18} className="text-white" />
           </span>
           <span className={`text-sm font-bold tracking-wide leading-tight ${brandText}`}>
-            Departmental Store
+            Store Master
           </span>
         </div>
 
         {/* Page title + user info dropdown */}
-        <div className="flex-1 flex items-center justify-between px-6">
+        <div className="flex-1 flex items-center justify-between px-6 pr-8">
           <h1 className={`text-lg font-semibold tracking-wide ${pageTitleCls}`}>
             {currentPage}
           </h1>
           
-          <div className="relative">
+          <div className="flex items-center gap-4">
+            {/* Theme Toggle Button */}
+            <button
+              onClick={toggleTheme}
+              className={`p-2 rounded-lg transition-all duration-300 focus:outline-none ${navInactive} hover:scale-110`}
+              title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            >
+              {isDark ? <Sun size={20} className="text-yellow-400" /> : <Moon size={20} className="text-indigo-600" />}
+            </button>
+
+            <div className="relative">
             {/* Clickable User profile */}
             <button 
               onClick={() => setUserDropdownOpen(!userDropdownOpen)}
@@ -127,6 +151,7 @@ const Layout = () => {
                 </div>
               </>
             )}
+            </div>
           </div>
         </div>
       </header>
@@ -134,11 +159,38 @@ const Layout = () => {
       {/* ── Body (sidebar + page content) ── */}
       <div className="flex flex-1 overflow-hidden print:block">
 
+        {/* Mobile Sidebar Backdrop */}
+        {sidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black/50 z-20 md:hidden backdrop-blur-sm transition-opacity"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
         {/* Sidebar */}
-        <aside className={`hidden md:flex md:w-64 md:flex-col flex-shrink-0 transition-colors duration-300 print:hidden ${sidebarBg}`}>
+        <aside className={`
+          fixed inset-y-0 left-0 z-30 w-64 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 md:flex md:flex-col flex-shrink-0 print:hidden
+          ${sidebarBg}
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        `}>
+          {/* Mobile Header in Sidebar */}
+          <div className={`flex md:hidden items-center gap-3 px-5 h-16 border-b ${brandBorder}`}>
+            <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-500">
+              <Store size={18} className="text-white" />
+            </span>
+            <span className={`text-sm font-bold tracking-wide leading-tight ${brandText}`}>
+              Dept Store
+            </span>
+            <button 
+              onClick={() => setSidebarOpen(false)}
+              className="ml-auto p-1.5 rounded-lg text-gray-400 hover:text-gray-500"
+            >
+              <X size={20} />
+            </button>
+          </div>
 
           {/* Nav links */}
-          <nav className="flex-1 px-3 mt-10 py-4 space-y-1 overflow-y-auto">
+          <nav className="flex-1 px-3 mt-4 md:mt-10 py-4 space-y-1 overflow-y-auto">
             {navigation.map((item) => {
               const Icon = item.icon;
               const active = isCurrentPath(item.href);
@@ -146,6 +198,7 @@ const Layout = () => {
                 <Link
                   key={item.name}
                   to={item.href}
+                  onClick={() => setSidebarOpen(false)}
                   className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
                     active
                       ? 'bg-indigo-600 text-white shadow-md shadow-indigo-900/40'
@@ -168,7 +221,10 @@ const Layout = () => {
           {/* Logout – pinned to bottom */}
           <div className={`px-3 py-4 border-t flex-shrink-0 ${logoutDivider}`}>
             <button
-              onClick={logout}
+              onClick={() => {
+                setSidebarOpen(false);
+                logout();
+              }}
               className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${logoutCls}`}
             >
               <LogOut size={18} />

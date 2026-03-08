@@ -6,6 +6,7 @@ import { InventoryProvider } from './context/InventoryContext';
 import { ProductProvider } from './context/ProductContext';
 import { SalesProvider } from './context/SalesContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { SocketProvider } from './context/SocketContext';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register';
 import Dashboard from './components/Dashboard/Dashboard';
@@ -53,11 +54,12 @@ function App() {
     <Router>
       <AuthProvider>
         <ThemeProvider>
-          <InventoryProvider>
-            <ProductProvider>
-              <SalesProvider>
-                <div className="App">
-                  <Routes>
+          <SocketProvider>
+            <InventoryProvider>
+              <ProductProvider>
+                <SalesProvider>
+                  <div className="App">
+                    <Routes>
                     {/* Public Routes */}
                     <Route path="/login" element={
                       <PublicRoute>
@@ -81,6 +83,7 @@ function App() {
                       <Route path="inventory" element={<InventoryDashboard />} />
                       <Route path="products" element={<ProductDashboard />} />
                       <Route path="sales" element={<SalesDashboard />} />
+                      <Route path="pos" element={<SalesDashboard />} />
                       <Route path="settings" element={<Settings />} />
                     </Route>
 
@@ -111,6 +114,7 @@ function App() {
               </SalesProvider>
             </ProductProvider>
           </InventoryProvider>
+          </SocketProvider>
         </ThemeProvider>
       </AuthProvider>
     </Router>

@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { useSales } from '../../context/SalesContext';
 import { useAuth } from '../../context/AuthContext';
 import useThemeClasses from '../../context/useThemeClasses';
+import { useSocket } from '../../context/SocketContext';
+import { useCallback } from 'react';
 import SalesTable from './SalesTable';
 import SaleDetails from './SaleDetails';
 import TodaySummary from './TodaySummary';
@@ -19,6 +21,8 @@ const SalesDashboard = () => {
     clearError 
   } = useSales();
   
+  const { socket, isConnected } = useSocket();
+  
   const { user } = useAuth();
   const theme = useThemeClasses();
   const [activeTab, setActiveTab] = useState('pos');
@@ -32,17 +36,41 @@ const SalesDashboard = () => {
   const [selectedSale, setSelectedSale] = useState(null);
   const [apiError, setApiError] = useState(null);
 
-  useEffect(() => {
-    if (activeTab === 'history') {
-      getSales(filters).then(result => {
-        if (!result.success) {
-          setApiError(result.error);
-        } else {
-          setApiError(null);
-        }
-      });
-    }
+  const fetchSales = useCallback((isBackground = false) => {
+    // If not active tab and not background refresh, skip
+    if (activeTab !== 'history' && !isBackground) return;
+    
+    getSales(filters).then(result => {
+      if (!result.success) {
+        if (!isBackground) setApiError(result.error);
+      } else {
+        setApiError(null);
+      }
+    });
   }, [getSales, activeTab, filters]);
+
+  useEffect(() => {
+    fetchSales();
+  }, [fetchSales]);
+
+  // Real-time updates
+  useEffect(() => {
+    if (socket && isConnected) {
+      const handleUpdate = (data) => {
+        console.log('Real-time history refresh triggered', data);
+        // Small delay to ensure DB has committed and indexed the new sale
+        setTimeout(() => fetchSales(true), 500);
+      };
+
+      socket.on('saleProcessed', handleUpdate);
+      socket.on('saleRefunded', handleUpdate);
+
+      return () => {
+        socket.off('saleProcessed', handleUpdate);
+        socket.off('saleRefunded', handleUpdate);
+      };
+    }
+  }, [socket, isConnected, fetchSales]);
 
   const handleFilterChange = (newFilters) => {
     setFilters(prev => ({ ...prev, ...newFilters, page: 1 }));

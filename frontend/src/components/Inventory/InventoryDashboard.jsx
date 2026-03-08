@@ -46,10 +46,7 @@ const InventoryDashboard = () => {
     getInventory(filters);
   };
 
-  const handleBulkUpdate = () => {
-    setSelectedProduct(null);
-    setShowStockModal(true);
-  };
+  // Removed handleBulkUpdate
 
   if (loading && inventory.length === 0) {
     return (
@@ -68,14 +65,7 @@ const InventoryDashboard = () => {
             <h1 className={`text-2xl font-bold ${theme.textPrimary}`}>Inventory Management</h1>
             <p className={`${theme.textSecondary} mt-1`}>Manage product stock and track inventory levels</p>
           </div>
-          {user?.role === 'admin' && (
-            <button
-              onClick={handleBulkUpdate}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Bulk Update
-            </button>
-          )}
+          {/* No Bulk Update button */}
         </div>
       </div>
 

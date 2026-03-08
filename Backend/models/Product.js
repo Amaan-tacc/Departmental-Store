@@ -40,7 +40,6 @@ const productSchema = new mongoose.Schema({
   },
   barcode: {
     type: String,
-    unique: true,
     sparse: true,
     trim: true
   },
@@ -64,10 +63,6 @@ const productSchema = new mongoose.Schema({
     ref: 'Store',
     required: [true, 'Store is required']
   },
-  isActive: {
-    type: Boolean,
-    default: true
-  },
   image: {
     type: String // URL or path to product image
   }
@@ -76,6 +71,8 @@ const productSchema = new mongoose.Schema({
 });
 
 // Index for search functionality
+productSchema.index({ store: 1, barcode: 1 }, { unique: true, sparse: true });
+productSchema.index({ store: 1, sku: 1 }, { unique: true });
 productSchema.index({ name: 'text', category: 'text', brand: 'text', description: 'text' });
 productSchema.index({ barcode: 1 });
 productSchema.index({ sku: 1 });
@@ -115,11 +112,9 @@ productSchema.methods.isOutOfStock = function() {
   return this.quantity === 0;
 };
 
-// Static method to find low stock products
 productSchema.statics.findLowStock = function(storeId) {
   return this.find({
     store: storeId,
-    isActive: true,
     $expr: { $lt: ['$quantity', '$lowStockThreshold'] }
   });
 };
@@ -128,7 +123,6 @@ productSchema.statics.findLowStock = function(storeId) {
 productSchema.statics.findOutOfStock = function(storeId) {
   return this.find({
     store: storeId,
-    isActive: true,
     quantity: 0
   });
 };
@@ -137,7 +131,6 @@ productSchema.statics.findOutOfStock = function(storeId) {
 productSchema.statics.searchProducts = function(storeId, searchTerm) {
   return this.find({
     store: storeId,
-    isActive: true,
     $or: [
       { name: { $regex: searchTerm, $options: 'i' } },
       { barcode: searchTerm },

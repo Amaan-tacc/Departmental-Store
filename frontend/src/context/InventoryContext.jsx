@@ -1,6 +1,6 @@
-// src/context/InventoryContext.js
-import React, { createContext, useState, useContext, useCallback } from 'react';
+import React, { createContext, useState, useContext, useCallback, useEffect } from 'react';
 import { inventoryAPI } from '../services/api';
+import { useSocket } from './SocketContext';
 
 const InventoryContext = createContext();
 
@@ -18,6 +18,7 @@ export const InventoryProvider = ({ children }) => {
   const [inventoryLogs, setInventoryLogs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const { socket, isConnected } = useSocket();
 
   // ✅ Stable function references with useCallback
   const getInventory = useCallback(async (filters = {}) => {
@@ -114,6 +115,31 @@ export const InventoryProvider = ({ children }) => {
       return { success: false, error: message };
     }
   }, [getInventory]);
+
+  // Handle real-time updates
+  useEffect(() => {
+    if (socket && isConnected) {
+      const handleInventoryChange = () => {
+        console.log('Real-time inventory update received');
+        getInventory();
+        getLowStockAlerts();
+      };
+
+      socket.on('inventoryUpdated', handleInventoryChange);
+      socket.on('productUpdated', handleInventoryChange);
+      socket.on('productCreated', handleInventoryChange);
+      socket.on('productDeleted', handleInventoryChange);
+      socket.on('saleProcessed', handleInventoryChange);
+
+      return () => {
+        socket.off('inventoryUpdated', handleInventoryChange);
+        socket.off('productUpdated', handleInventoryChange);
+        socket.off('productCreated', handleInventoryChange);
+        socket.off('productDeleted', handleInventoryChange);
+        socket.off('saleProcessed', handleInventoryChange);
+      };
+    }
+  }, [socket, isConnected, getInventory, getLowStockAlerts]);
 
   const value = {
     inventory,

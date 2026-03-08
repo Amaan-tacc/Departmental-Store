@@ -30,6 +30,10 @@ const PointOfSale = () => {
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [lastSale, setLastSale] = useState(null);
   const [filteredProducts, setFilteredProducts] = useState([]);
+  
+  // Manual Tax States
+  const [isManualTax, setIsManualTax] = useState(false);
+  const [manualTaxAmount, setManualTaxAmount] = useState('');
 
   useEffect(() => {
     getProducts({ limit: 50 });
@@ -67,7 +71,10 @@ const PointOfSale = () => {
       return;
     }
 
-    if (parseFloat(amountPaid) < cartTotals.total) {
+    const effectiveTax = isManualTax ? (parseFloat(manualTaxAmount) || 0) : cartTotals.tax;
+    const effectiveTotal = cartTotals.subtotal + effectiveTax;
+
+    if (parseFloat(amountPaid) < effectiveTotal) {
       toast.warning('Amount paid is less than total amount');
       return;
     }
@@ -79,7 +86,9 @@ const PointOfSale = () => {
       })),
       paymentMethod,
       amountPaid: parseFloat(amountPaid),
-      customerEmail: customerEmail || undefined
+      customerEmail: customerEmail || undefined,
+      tax: effectiveTax,
+      total: effectiveTotal
     };
 
     const result = await processSale(saleData);
@@ -96,7 +105,9 @@ const PointOfSale = () => {
 
   const calculateChange = () => {
     const paid = parseFloat(amountPaid) || 0;
-    return Math.max(0, paid - cartTotals.total);
+    const effectiveTax = isManualTax ? (parseFloat(manualTaxAmount) || 0) : cartTotals.tax;
+    const effectiveTotal = cartTotals.subtotal + effectiveTax;
+    return Math.max(0, paid - effectiveTotal);
   };
 
   return (
@@ -222,13 +233,44 @@ const PointOfSale = () => {
             <span className={theme.textSecondary}>Subtotal:</span>
             <span className={`font-medium ${theme.textPrimary}`}>${cartTotals.subtotal.toFixed(2)}</span>
           </div>
-          <div className="flex justify-between">
-            <span className={theme.textSecondary}>Tax (8%):</span>
-            <span className={`font-medium ${theme.textPrimary}`}>${cartTotals.tax.toFixed(2)}</span>
+          
+          <div className="flex flex-col space-y-1">
+            <div className="flex justify-between items-center">
+              <span className={theme.textSecondary}>Tax ({cartTotals.taxRate}%):</span>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => setIsManualTax(!isManualTax)}
+                  className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded transition-colors ${
+                    isManualTax ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                  }`}
+                >
+                  Manual
+                </button>
+                <span className={`font-medium ${theme.textPrimary}`}>
+                  ${(isManualTax ? (parseFloat(manualTaxAmount) || 0) : cartTotals.tax).toFixed(2)}
+                </span>
+              </div>
+            </div>
+            
+            {isManualTax && (
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-[10px] text-gray-400 font-bold uppercase">Amount:</span>
+                <input
+                  type="number"
+                  value={manualTaxAmount}
+                  onChange={(e) => setManualTaxAmount(e.target.value)}
+                  className={`flex-1 text-xs px-2 py-1 border rounded focus:ring-1 focus:ring-indigo-500 outline-none ${theme.input}`}
+                  placeholder="0.00"
+                />
+              </div>
+            )}
           </div>
+
           <div className={`flex justify-between text-lg font-bold border-t pt-2 ${theme.divider}`}>
             <span className={theme.textPrimary}>Total:</span>
-            <span className={theme.textPrimary}>${cartTotals.total.toFixed(2)}</span>
+            <span className={theme.textPrimary}>
+              ${(cartTotals.subtotal + (isManualTax ? (parseFloat(manualTaxAmount) || 0) : cartTotals.tax)).toFixed(2)}
+            </span>
           </div>
         </div>
 
@@ -291,10 +333,10 @@ const PointOfSale = () => {
         {/* Process Sale Button */}
         <button
           onClick={handleProcessSale}
-          disabled={loading || cart.length === 0 || !amountPaid || parseFloat(amountPaid) < cartTotals.total}
+          disabled={loading || cart.length === 0 || !amountPaid || parseFloat(amountPaid) < (cartTotals.subtotal + (isManualTax ? (parseFloat(manualTaxAmount) || 0) : cartTotals.tax))}
           className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed font-bold shadow-lg shadow-blue-900/20 active:scale-[0.98] transition-all"
         >
-          {loading ? 'Processing...' : `Process Sale - $${cartTotals.total.toFixed(2)}`}
+          {loading ? 'Processing...' : `Process Sale - $${(cartTotals.subtotal + (isManualTax ? (parseFloat(manualTaxAmount) || 0) : cartTotals.tax)).toFixed(2)}`}
         </button>
 
         {/* Cashier Info */}

@@ -1,12 +1,27 @@
-// src/components/Dashboard/Dashboard.jsx
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from "../../context/AuthContext";
 import useThemeClasses from '../../context/useThemeClasses';
 import api from '../../services/api';
+import { 
+  Package, 
+  ShoppingCart, 
+  Receipt, 
+  AlertTriangle, 
+  LayoutDashboard, 
+  DollarSign, 
+  Wallet, 
+  BarChart3, 
+  ChevronRight,
+  Boxes
+} from 'lucide-react';
+import { useSocket } from '../../context/SocketContext';
+import { useCallback } from 'react';
 
 const Dashboard = () => {
   const { user } = useAuth();
   const theme = useThemeClasses();
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     totalProducts: 0,
     totalSalesToday: 0,
@@ -21,60 +36,87 @@ const Dashboard = () => {
   const [recentSales, setRecentSales] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const { socket, isConnected } = useSocket();
 
   // Fetch dashboard data
+  const fetchDashboardData = useCallback(async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch summaries in parallel
+      const [todayRes, monthRes, salesRes, productsRes, lowStockRes] = await Promise.all([
+        api.get('/sales/today/summary'),
+        api.get('/sales/monthly/summary'),
+        api.get('/sales?page=1&limit=5'),
+        api.get('/products?page=1&limit=1'),
+        api.get('/products?lowStock=true')
+      ]);
+
+      const todayData = todayRes.data.data;
+      const monthData = monthRes.data.data;
+      const salesData = salesRes.data.data;
+      const productsData = productsRes.data.data;
+      const lowStockData = lowStockRes.data.data;
+
+      setTodaySummary(todayData.summary);
+      setMonthlySummary(monthData.summary);
+      setRecentSales(salesData.sales || []);
+      
+      // Find current user's performance
+      const myPerf = todayData.cashierStats?.find(c => c.cashierName === user?.fullname) || { totalSales: 0, transactionCount: 0 };
+      
+      setStats({
+        totalProducts: productsData.pagination?.totalProducts || 0,
+        totalSalesToday: todayData.summary?.totalSales || 0,
+        totalSalesMonth: monthData.summary?.totalSales || 0,
+        lowStockCount: lowStockData.products?.length || 0,
+        mySalesToday: myPerf.totalSales || 0,
+        myTransactionsToday: myPerf.transactionCount || 0
+      });
+
+    } catch (err) {
+      console.error('Dashboard data fetch error:', err);
+      setError('Failed to load dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        setLoading(true);
-        
-        // Fetch summaries in parallel
-        const [todayRes, monthRes, salesRes, productsRes, lowStockRes] = await Promise.all([
-          api.get('/sales/today/summary'),
-          api.get('/sales/monthly/summary'),
-          api.get('/sales?page=1&limit=5'),
-          api.get('/products?page=1&limit=1'),
-          api.get('/products?lowStock=true')
-        ]);
-
-        const todayData = todayRes.data.data;
-        const monthData = monthRes.data.data;
-        const salesData = salesRes.data.data;
-        const productsData = productsRes.data.data;
-        const lowStockData = lowStockRes.data.data;
-
-        setTodaySummary(todayData.summary);
-        setMonthlySummary(monthData.summary);
-        setRecentSales(salesData.sales || []);
-        
-        // Find current user's performance
-        const myPerf = todayData.cashierStats?.find(c => c.cashierName === user?.fullname) || { totalSales: 0, transactionCount: 0 };
-        
-        setStats({
-          totalProducts: productsData.pagination?.totalProducts || 0,
-          totalSalesToday: todayData.summary?.totalSales || 0,
-          totalSalesMonth: monthData.summary?.totalSales || 0,
-          lowStockCount: lowStockData.products?.length || 0,
-          mySalesToday: myPerf.totalSales || 0,
-          myTransactionsToday: myPerf.transactionCount || 0
-        });
-
-      } catch (err) {
-        console.error('Dashboard data fetch error:', err);
-        setError('Failed to load dashboard data');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchDashboardData();
-  }, []);
+  }, [fetchDashboardData]);
 
-  const StatCard = ({ title, value, icon, color, loading }) => (
+  // Handle real-time updates
+  useEffect(() => {
+    if (socket && isConnected) {
+      const handleUpdate = () => {
+        console.log('Real-time dashboard update received');
+        fetchDashboardData();
+      };
+
+      socket.on('saleProcessed', handleUpdate);
+      socket.on('saleRefunded', handleUpdate);
+      socket.on('inventoryUpdated', handleUpdate);
+      socket.on('productCreated', handleUpdate);
+      socket.on('productUpdated', handleUpdate);
+      socket.on('productDeleted', handleUpdate);
+
+      return () => {
+        socket.off('saleProcessed', handleUpdate);
+        socket.off('saleRefunded', handleUpdate);
+        socket.off('inventoryUpdated', handleUpdate);
+        socket.off('productCreated', handleUpdate);
+        socket.off('productUpdated', handleUpdate);
+        socket.off('productDeleted', handleUpdate);
+      };
+    }
+  }, [socket, isConnected, fetchDashboardData]);
+
+  const StatCard = ({ title, value, icon: Icon, color, loading }) => (
     <div className={`${theme.card} rounded-lg shadow p-6 border transition-colors duration-300`}>
       <div className="flex items-center">
         <div className={`p-3 rounded-full ${color} mr-4`}>
-          <i className={`${icon} text-white text-xl`}></i>
+          <Icon size={24} className="text-white" />
         </div>
         <div>
           <p className={`text-sm font-medium ${theme.textSecondary}`}>{title}</p>
@@ -111,7 +153,7 @@ const Dashboard = () => {
             <div key={sale._id} className={`flex items-center justify-between border-b ${theme.divider} pb-3`}>
               <div className="flex items-center">
                 <div className={`${theme.isDark ? 'bg-green-900/40' : 'bg-green-100'} p-2 rounded-full mr-3`}>
-                  <i className={`fas fa-cash-register ${theme.isDark ? 'text-green-400' : 'text-green-600'}`}></i>
+                  <ShoppingCart size={20} className={theme.isDark ? 'text-green-400' : 'text-green-600'} />
                 </div>
                 <div>
                   <p className={`font-medium ${theme.textPrimary}`}>Sale #{sale.saleNumber}</p>
@@ -127,7 +169,7 @@ const Dashboard = () => {
           ))
         ) : (
           <div className="text-center py-4">
-            <i className={`fas fa-receipt ${theme.isDark ? 'text-slate-600' : 'text-gray-300'} text-3xl mb-2`}></i>
+            <Receipt size={32} className={`${theme.isDark ? 'text-slate-600' : 'text-gray-300'} mx-auto mb-2`} />
             <p className={theme.textSecondary}>No recent sales</p>
           </div>
         )}
@@ -221,7 +263,7 @@ const Dashboard = () => {
         ) : (
           <div className={`h-64 flex items-center justify-center ${theme.cardInner} rounded border`}>
             <div className="text-center">
-              <i className={`fas fa-chart-bar ${theme.isDark ? 'text-slate-600' : 'text-gray-300'} text-3xl mb-2`}></i>
+              <BarChart3 size={32} className={`${theme.isDark ? 'text-slate-600' : 'text-gray-300'} mx-auto mb-2`} />
               <p className={theme.textSecondary}>No sales data for this period</p>
             </div>
           </div>
@@ -236,49 +278,49 @@ const Dashboard = () => {
       <div className="space-y-3">
         <button 
           className={`w-full flex items-center justify-between p-3 ${theme.btnBlueBg} rounded-lg transition-colors`}
-          onClick={() => window.location.href = '/pos'}
+          onClick={() => navigate('/pos')}
         >
           <div className="flex items-center">
-            <i className={`fas fa-cash-register ${theme.isDark ? 'text-blue-400' : 'text-blue-600'} mr-3`}></i>
+            <ShoppingCart size={20} className={`${theme.isDark ? 'text-blue-400' : 'text-blue-600'} mr-3`} />
             <span className={`${theme.btnBlueText} font-medium`}>New Sale</span>
           </div>
-          <i className={`fas fa-chevron-right ${theme.isDark ? 'text-blue-500' : 'text-blue-400'}`}></i>
+          <ChevronRight size={18} className={theme.isDark ? 'text-blue-500' : 'text-blue-400'} />
         </button>
         
         <button 
           className={`w-full flex items-center justify-between p-3 ${theme.btnGreenBg} rounded-lg transition-colors`}
-          onClick={() => window.location.href = '/products'}
+          onClick={() => navigate('/products')}
         >
           <div className="flex items-center">
-            <i className={`fas fa-boxes ${theme.isDark ? 'text-green-400' : 'text-green-600'} mr-3`}></i>
+            <Package size={20} className={`${theme.isDark ? 'text-green-400' : 'text-green-600'} mr-3`} />
             <span className={`${theme.btnGreenText} font-medium`}>Manage Products</span>
           </div>
-          <i className={`fas fa-chevron-right ${theme.isDark ? 'text-green-500' : 'text-green-400'}`}></i>
+          <ChevronRight size={18} className={theme.isDark ? 'text-green-500' : 'text-green-400'} />
         </button>
         
         <button 
           className={`w-full flex items-center justify-between p-3 ${theme.btnPurpleBg} rounded-lg transition-colors`}
-          onClick={() => window.location.href = '/sales'}
+          onClick={() => navigate('/sales')}
         >
           <div className="flex items-center">
-            <i className={`fas fa-receipt ${theme.isDark ? 'text-purple-400' : 'text-purple-600'} mr-3`}></i>
+            <Receipt size={20} className={`${theme.isDark ? 'text-purple-400' : 'text-purple-600'} mr-3`} />
             <span className={`${theme.btnPurpleText} font-medium`}>View Sales Report</span>
           </div>
-          <i className={`fas fa-chevron-right ${theme.isDark ? 'text-purple-500' : 'text-purple-400'}`}></i>
+          <ChevronRight size={18} className={theme.isDark ? 'text-purple-500' : 'text-purple-400'} />
         </button>
         
         {stats.lowStockCount > 0 && (
           <button 
             className={`w-full flex items-center justify-between p-3 ${theme.btnYellowBg} rounded-lg transition-colors`}
-            onClick={() => window.location.href = '/products?lowStock=true'}
+            onClick={() => navigate('/products?lowStock=true')}
           >
             <div className="flex items-center">
-              <i className={`fas fa-exclamation-triangle ${theme.isDark ? 'text-yellow-400' : 'text-yellow-600'} mr-3`}></i>
+              <AlertTriangle size={20} className={`${theme.isDark ? 'text-yellow-400' : 'text-yellow-600'} mr-3`} />
               <span className={`${theme.btnYellowText} font-medium`}>
                 Low Stock Alert ({stats.lowStockCount})
               </span>
             </div>
-            <i className={`fas fa-chevron-right ${theme.isDark ? 'text-yellow-500' : 'text-yellow-400'}`}></i>
+            <ChevronRight size={18} className={theme.isDark ? 'text-yellow-500' : 'text-yellow-400'} />
           </button>
         )}
       </div>
@@ -289,7 +331,7 @@ const Dashboard = () => {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <i className="fas fa-exclamation-triangle text-red-500 text-3xl mb-2"></i>
+          <AlertTriangle size={32} className="text-red-500 mx-auto mb-2" />
           <p className="text-red-600">{error}</p>
           <button 
             onClick={() => window.location.reload()}
@@ -325,7 +367,7 @@ const Dashboard = () => {
         <StatCard
           title="Total Products"
           value={stats.totalProducts}
-          icon="fas fa-boxes"
+          icon={Boxes}
           color="bg-blue-500"
           loading={loading}
         />
@@ -334,14 +376,14 @@ const Dashboard = () => {
             <StatCard
               title="Monthly Revenue"
               value={`$${(stats.totalSalesMonth || 0).toLocaleString()}`}
-              icon="fas fa-dollar-sign"
+              icon={DollarSign}
               color="bg-green-600"
               loading={loading}
             />
             <StatCard
               title="Today's Revenue"
               value={`$${(stats.totalSalesToday || 0).toLocaleString()}`}
-              icon="fas fa-cash-register"
+              icon={ShoppingCart}
               color="bg-green-500"
               loading={loading}
             />
@@ -351,14 +393,14 @@ const Dashboard = () => {
             <StatCard
               title="My Sales Today"
               value={`$${(stats.mySalesToday || 0).toLocaleString()}`}
-              icon="fas fa-wallet"
+              icon={Wallet}
               color="bg-indigo-600"
               loading={loading}
             />
             <StatCard
               title="My Transactions"
               value={stats.myTransactionsToday}
-              icon="fas fa-receipt"
+              icon={Receipt}
               color="bg-indigo-500"
               loading={loading}
             />
@@ -367,7 +409,7 @@ const Dashboard = () => {
         <StatCard
           title="Low Stock Items"
           value={stats.lowStockCount}
-          icon="fas fa-exclamation-triangle"
+          icon={AlertTriangle}
           color="bg-yellow-500"
           loading={loading}
         />

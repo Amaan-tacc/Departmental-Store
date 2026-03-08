@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { Store, User, Mail, Lock, UserPlus, Users } from "lucide-react";
+import { Store, User, Mail, Lock, UserPlus, Users, Eye, EyeOff, CheckCircle2 } from "lucide-react";
 
 /**
  * Register Component
@@ -16,6 +16,7 @@ const Register = () => {
     role: "cashier",
   });
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { register, error, setError } = useAuth();
   const navigate = useNavigate();
 
@@ -53,22 +54,12 @@ const Register = () => {
             <Store className="text-white w-10 h-10" />
           </div>
           <h1 className="text-5xl font-extrabold text-white tracking-tight mb-4">
-            Join <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-blue-400">StoreMaster</span>
+            Join <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-blue-400">Store Master</span>
           </h1>
           <p className="text-slate-400 text-lg leading-relaxed">
             Take control of your business inventory and sales today. Register your account and start your journey towards excellence.
           </p>
           
-          <div className="mt-12 grid grid-cols-2 gap-4 w-full">
-            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm">
-              <p className="text-white font-bold text-lg mb-1">Easy Setup</p>
-              <p className="text-slate-500 text-sm">Under 5 minutes</p>
-            </div>
-            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm">
-              <p className="text-white font-bold text-lg mb-1">Secure</p>
-              <p className="text-slate-500 text-sm">Encrypted data</p>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -80,7 +71,7 @@ const Register = () => {
             <div className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-600/30 mb-4">
               <Store className="text-white w-7 h-7" />
             </div>
-            <h2 className="text-3xl font-bold text-slate-900">StoreMaster</h2>
+            <h2 className="text-3xl font-bold text-slate-900">Store Master</h2>
           </div>
 
           <div className="mb-8 text-left hidden lg:block">
@@ -140,13 +131,41 @@ const Register = () => {
                 </div>
                 <input
                   name="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   required
                   value={formData.password}
                   onChange={handleChange}
-                  className="block w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all duration-200 shadow-sm"
-                  placeholder="Min. 6 characters"
+                  className="block w-full pl-11 pr-12 py-3 bg-white border border-slate-200 rounded-2xl text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all duration-200 shadow-sm"
+                  placeholder="Create a strong password"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-indigo-600 transition-colors"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+              <div className="mt-2 text-[11px] space-y-1 pl-1">
+                <p className="text-slate-500 font-medium">Password must have:</p>
+                <div className="grid grid-cols-2 gap-x-2">
+                  <div className="flex items-center gap-1.5 text-slate-500">
+                    <CheckCircle2 size={10} className="text-indigo-500" />
+                    <span>Min. 6 characters</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-slate-500">
+                    <CheckCircle2 size={10} className="text-indigo-500" />
+                    <span>One uppercase letter</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-slate-500">
+                    <CheckCircle2 size={10} className="text-indigo-500" />
+                    <span>One lowercase letter</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-slate-500">
+                    <CheckCircle2 size={10} className="text-indigo-500" />
+                    <span>One number (0-9)</span>
+                  </div>
+                </div>
               </div>
             </div>
 

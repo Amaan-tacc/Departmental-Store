@@ -139,4 +139,10 @@ export const reportsAPI = {
   }),
 };
 
+// Store API calls
+export const storeAPI = {
+  getSettings: () => api.get('/stores/settings'),
+  updateSettings: (data) => api.patch('/stores/settings', data),
+};
+
 export default api;

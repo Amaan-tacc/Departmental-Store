@@ -1,5 +1,6 @@
-import React, { createContext, useState, useContext, useCallback } from 'react';
-import { productAPI } from '../services/api'; // Update this import
+import React, { createContext, useState, useContext, useCallback, useEffect } from 'react';
+import { productAPI } from '../services/api';
+import { useSocket } from './SocketContext';
 
 const ProductContext = createContext();
 
@@ -12,6 +13,7 @@ export const useProducts = () => {
 };
 
 export const ProductProvider = ({ children }) => {
+  const { socket, isConnected } = useSocket();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -109,10 +111,8 @@ export const ProductProvider = ({ children }) => {
       setError('');
       await productAPI.deleteProduct(productId);
       
-      // Remove product from local state (soft delete)
-      setProducts(prev => prev.map(product => 
-        product._id === productId ? { ...product, isActive: false } : product
-      ));
+      // Remove product from local state (hard delete behavior)
+      setProducts(prev => prev.filter(product => product._id !== productId));
       
       return { success: true };
     } catch (error) {
@@ -191,7 +191,33 @@ export const ProductProvider = ({ children }) => {
     setError('');
   }, []);
 
-const value = {
+  // Handle real-time updates
+  useEffect(() => {
+    if (socket && isConnected) {
+      const handleProductChange = () => {
+        getProducts();
+        getCategories();
+      };
+
+      socket.on('productCreated', handleProductChange);
+      socket.on('productUpdated', handleProductChange);
+      socket.on('productDeleted', handleProductChange);
+      socket.on('categoryCreated', handleProductChange);
+      socket.on('categoryDeleted', handleProductChange);
+      socket.on('inventoryUpdated', handleProductChange);
+
+      return () => {
+        socket.off('productCreated', handleProductChange);
+        socket.off('productUpdated', handleProductChange);
+        socket.off('productDeleted', handleProductChange);
+        socket.off('categoryCreated', handleProductChange);
+        socket.off('categoryDeleted', handleProductChange);
+        socket.off('inventoryUpdated', handleProductChange);
+      };
+    }
+  }, [socket, isConnected, getProducts, getCategories]);
+
+  const value = {
   products,
   categories,
   loading,
