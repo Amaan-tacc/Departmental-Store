@@ -3,15 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from "../../context/AuthContext";
 import useThemeClasses from '../../context/useThemeClasses';
 import api from '../../services/api';
-import { 
-  Package, 
-  ShoppingCart, 
-  Receipt, 
-  AlertTriangle, 
-  LayoutDashboard, 
-  DollarSign, 
-  Wallet, 
-  BarChart3, 
+import {
+  Package,
+  ShoppingCart,
+  Receipt,
+  AlertTriangle,
+  LayoutDashboard,
+  DollarSign,
+  Wallet,
+  BarChart3,
   ChevronRight,
   Boxes
 } from 'lucide-react';
@@ -42,7 +42,7 @@ const Dashboard = () => {
   const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
-      
+
       // Fetch summaries in parallel
       const [todayRes, monthRes, salesRes, productsRes, lowStockRes] = await Promise.all([
         api.get('/sales/today/summary'),
@@ -61,10 +61,10 @@ const Dashboard = () => {
       setTodaySummary(todayData.summary);
       setMonthlySummary(monthData.summary);
       setRecentSales(salesData.sales || []);
-      
+
       // Find current user's performance
       const myPerf = todayData.cashierStats?.find(c => c.cashierName === user?.fullname) || { totalSales: 0, transactionCount: 0 };
-      
+
       setStats({
         totalProducts: productsData.pagination?.totalProducts || 0,
         totalSalesToday: todayData.summary?.totalSales || 0,
@@ -179,16 +179,16 @@ const Dashboard = () => {
 
   const SalesOverview = () => {
     const isAdmin = user?.role === 'admin';
-    const currentSummary = isAdmin 
+    const currentSummary = isAdmin
       ? (viewMode === 'today' ? todaySummary : monthlySummary)
-      : { 
-          totalSales: stats.mySalesToday, 
-          totalTransactions: stats.myTransactionsToday,
-          totalItems: 0, // Not tracked per cashier in this summary response?
-          averageSale: stats.myTransactionsToday > 0 ? stats.mySalesToday / stats.myTransactionsToday : 0
-        };
+      : {
+        totalSales: stats.mySalesToday,
+        totalTransactions: stats.myTransactionsToday,
+        totalItems: 0, // Not tracked per cashier in this summary response?
+        averageSale: stats.myTransactionsToday > 0 ? stats.mySalesToday / stats.myTransactionsToday : 0
+      };
 
-    const label = isAdmin 
+    const label = isAdmin
       ? (viewMode === 'today' ? "Today's Overview" : "Monthly Overview")
       : "My Performance Today";
 
@@ -200,21 +200,19 @@ const Dashboard = () => {
             <div className={`flex p-1 ${theme.isDark ? 'bg-slate-800' : 'bg-gray-100'} rounded-lg`}>
               <button
                 onClick={() => setViewMode('today')}
-                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
-                  viewMode === 'today'
+                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${viewMode === 'today'
                     ? 'bg-blue-600 text-white shadow-sm'
                     : `${theme.textSecondary} hover:text-blue-500`
-                }`}
+                  }`}
               >
                 Today
               </button>
               <button
                 onClick={() => setViewMode('month')}
-                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
-                  viewMode === 'month'
+                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${viewMode === 'month'
                     ? 'bg-blue-600 text-white shadow-sm'
                     : `${theme.textSecondary} hover:text-blue-500`
-                }`}
+                  }`}
               >
                 Month
               </button>
@@ -276,7 +274,7 @@ const Dashboard = () => {
     <div className={`${theme.card} rounded-lg shadow p-6 border transition-colors duration-300`}>
       <h3 className={`text-lg font-medium ${theme.textPrimary} mb-4`}>Quick Actions</h3>
       <div className="space-y-3">
-        <button 
+        <button
           className={`w-full flex items-center justify-between p-3 ${theme.btnBlueBg} rounded-lg transition-colors`}
           onClick={() => navigate('/pos')}
         >
@@ -286,8 +284,8 @@ const Dashboard = () => {
           </div>
           <ChevronRight size={18} className={theme.isDark ? 'text-blue-500' : 'text-blue-400'} />
         </button>
-        
-        <button 
+
+        <button
           className={`w-full flex items-center justify-between p-3 ${theme.btnGreenBg} rounded-lg transition-colors`}
           onClick={() => navigate('/products')}
         >
@@ -297,8 +295,8 @@ const Dashboard = () => {
           </div>
           <ChevronRight size={18} className={theme.isDark ? 'text-green-500' : 'text-green-400'} />
         </button>
-        
-        <button 
+
+        <button
           className={`w-full flex items-center justify-between p-3 ${theme.btnPurpleBg} rounded-lg transition-colors`}
           onClick={() => navigate('/sales')}
         >
@@ -308,9 +306,9 @@ const Dashboard = () => {
           </div>
           <ChevronRight size={18} className={theme.isDark ? 'text-purple-500' : 'text-purple-400'} />
         </button>
-        
+
         {stats.lowStockCount > 0 && (
-          <button 
+          <button
             className={`w-full flex items-center justify-between p-3 ${theme.btnYellowBg} rounded-lg transition-colors`}
             onClick={() => navigate('/products?lowStock=true')}
           >
@@ -333,7 +331,7 @@ const Dashboard = () => {
         <div className="text-center">
           <AlertTriangle size={32} className="text-red-500 mx-auto mb-2" />
           <p className="text-red-600">{error}</p>
-          <button 
+          <button
             onClick={() => window.location.reload()}
             className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
           >
@@ -351,7 +349,7 @@ const Dashboard = () => {
           {loading ? (
             <div className={`h-8 ${theme.isDark ? 'bg-slate-600' : 'bg-gray-200'} rounded animate-pulse w-64`}></div>
           ) : (
-            `Welcome back, ${user?.name || 'User'}!`
+            `Welcome back, ${user?.fullname || 'User'}!`
           )}
         </div>
         <div className={`${theme.textSecondary} mt-2`}>
