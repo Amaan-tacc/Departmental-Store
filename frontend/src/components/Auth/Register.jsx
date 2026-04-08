@@ -54,7 +54,7 @@ const Register = () => {
             <Store className="text-white w-10 h-10" />
           </div>
           <h1 className="text-5xl font-extrabold text-white tracking-tight mb-4">
-            Join <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-blue-400">Store Master</span>
+            Join <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-blue-400">store master!</span>
           </h1>
           <p className="text-slate-400 text-lg leading-relaxed">
             Take control of your business inventory and sales today. Register your account and start your journey towards excellence.
@@ -71,7 +71,7 @@ const Register = () => {
             <div className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-600/30 mb-4">
               <Store className="text-white w-7 h-7" />
             </div>
-            <h2 className="text-3xl font-bold text-slate-900">Store Master</h2>
+            <h2 className="text-3xl font-bold text-slate-900">store master!</h2>
           </div>
 
           <div className="mb-8 text-left hidden lg:block">

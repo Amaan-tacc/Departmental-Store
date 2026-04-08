@@ -48,7 +48,7 @@ const Login = () => {
             <Store className="text-white w-10 h-10" />
           </div>
           <h1 className="text-5xl font-extrabold text-white tracking-tight mb-4">
-            Welcome to <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-blue-400">Store Master</span>
+            Welcome to <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-blue-400">store master!</span>
           </h1>
           <p className="text-slate-400 text-lg leading-relaxed">
             Manage your inventory, track sales, and grow your departmental store with our premium all-in-one solution. Efficiency redefined.
@@ -65,7 +65,7 @@ const Login = () => {
             <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-600/30 mb-4">
               <Store className="text-white w-8 h-8" />
             </div>
-            <h2 className="text-3xl font-bold text-slate-900">Store Master</h2>
+            <h2 className="text-3xl font-bold text-slate-900">store master!</h2>
             <p className="text-slate-500 mt-2">Sign in to continue</p>
           </div>
 

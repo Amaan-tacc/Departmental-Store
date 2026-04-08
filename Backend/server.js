@@ -1,10 +1,14 @@
 // server.js
+import dns from 'dns';
+dns.setServers(['8.8.8.8', '8.8.4.4']); // This forces the app to use Google DNS
+
+import dotenv from 'dotenv';
+dotenv.config();
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-import dotenv from 'dotenv';
 
 // Database connection
 import connectDB from './config/database.js';
@@ -17,7 +21,7 @@ import inventoryRoutes from './routes/inventory.js';
 import reportRoutes from './routes/reports.js';
 import storeRoutes from './routes/stores.js';
 
-dotenv.config();
+
 
 const app = express();
 const httpServer = createServer(app);

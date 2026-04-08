@@ -1,0 +1,5 @@
+NODE_ENV=development
+PORT=5000
+MONGODB_URI=mongodb+srv://amaan_sheikh11:amaan_sheikh11@departmental-store.ue4rht0.mongodb.net/departmental_store
+JWT_SECRET=your-super-secret-jwt-key-change-in-production
+FRONTEND_URL=http://localhost:3000

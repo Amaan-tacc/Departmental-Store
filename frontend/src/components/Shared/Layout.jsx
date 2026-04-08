@@ -77,7 +77,7 @@ const Layout = () => {
             <Store size={18} className="text-white" />
           </span>
           <span className={`text-sm font-bold tracking-wide leading-tight ${brandText}`}>
-            Store Master
+            store master!
           </span>
         </div>
 
